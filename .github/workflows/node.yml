@@ -37,9 +37,54 @@ jobs:
       env:
         CI: true
         
-  docker:
+  version:
     needs: build
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/stable'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      version-tag: ${{ steps.version.outputs.version-tag }}
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Generate semantic version
+      id: version
+      uses: paulhatch/semantic-version@v5.4.0
+      with:
+        tag_prefix: "v"
+        major_pattern: "(BREAKING CHANGE|feat!|fix!|refactor!)"
+        minor_pattern: "(feat)"
+        patch_pattern: "(fix|docs|test|refactor|perf|style|build|ci|chore)"
+        version_format: "${major}.${minor}.${patch}"
+        bump_each_commit: false
+        search_commit_body: true
+        user_format_type: "csv"
+    
+    - name: Create GitHub Release
+      if: steps.version.outputs.changed == 'true'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.version-tag }}
+        release_name: Release ${{ steps.version.outputs.version }}
+        body: |
+          ## Changes in ${{ steps.version.outputs.version }}
+          
+          **Docker Images:**
+          - `ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}`
+          - `ghcr.io/${{ github.repository }}:latest`
+          
+          See the [full changelog](https://github.com/${{ github.repository }}/compare/${{ steps.version.outputs.previous-tag }}...${{ steps.version.outputs.version-tag }}) for all changes.
+        draft: false
+        prerelease: false
+
+  docker:
+    needs: [build, version]
+    if: github.event_name != 'pull_request' && always() && needs.build.result == 'success'
     runs-on: ubuntu-latest
     
     steps:
@@ -64,6 +109,9 @@ jobs:
           type=sha,format=long
           type=ref,event=branch
           type=ref,event=tag
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=${{ needs.version.outputs.version }},enable=${{ needs.version.outputs.version != '' }}
+          type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
           
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
