@@ -141,7 +141,7 @@ describe('Multi-Tenancy Integration Tests', () => {
 
     test('should handle Bearer authentication with tenant context', async () => {
       // Arrange
-      const { bearerMiddleware } = require('../../middleware/bearer.middleware');
+      const { bearerMiddleware } = await import('../../middleware/bearer.middleware');
       bearerMiddleware.validateJWT.mockImplementation((req: any, res: any, next: any) => {
         req.tenantId = 'tenant1';
         next();
@@ -173,8 +173,8 @@ describe('Multi-Tenancy Integration Tests', () => {
 
     test('should handle Bearer authentication failure', async () => {
       // Arrange
-      const { bearerMiddleware } = require('../../middleware/bearer.middleware');
-      bearerMiddleware.validateJWT.mockImplementation((req: any, res: any, next: any) => {
+      const { bearerMiddleware } = await import('../../middleware/bearer.middleware');
+      bearerMiddleware.validateJWT.mockImplementation((req: any, res: any) => {
         return res.status(401).json({ error: 'Invalid bearer token' });
       });
 
@@ -194,7 +194,7 @@ describe('Multi-Tenancy Integration Tests', () => {
 
     test('should filter graphs by tenant', async () => {
       // Arrange
-      const { bearerMiddleware } = require('../../middleware/bearer.middleware');
+      const { bearerMiddleware } = await import('../../middleware/bearer.middleware');
       bearerMiddleware.validateJWT.mockImplementation((req: any, res: any, next: any) => {
         req.tenantId = 'tenant1';
         next();

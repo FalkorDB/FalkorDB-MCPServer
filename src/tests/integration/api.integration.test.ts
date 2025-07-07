@@ -3,7 +3,6 @@ import express from 'express';
 import { testDbHelper, generateTestGraphName, testConfig } from '../utils/test-helpers';
 import { testFalkorDBService } from '../utils/mock-falkordb-service';
 import { mcpRoutes } from '../../routes/mcp.routes';
-import { authenticateMCP } from '../../middleware/auth.middleware';
 import './setup';
 
 // Mock the falkorDBService to use test database

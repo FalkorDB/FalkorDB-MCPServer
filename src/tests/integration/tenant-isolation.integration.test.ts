@@ -1,7 +1,7 @@
 import request from 'supertest';
 import express from 'express';
 import { mcpController } from '../../controllers/mcp.controller';
-import { testDbHelper, generateTestGraphName } from '../utils/test-helpers';
+import { testDbHelper } from '../utils/test-helpers';
 
 // Mock the auth middleware to support tenant testing
 const mockAuthMiddleware = jest.fn();
@@ -18,8 +18,6 @@ app.post('/api/mcp/context', mcpController.processContextRequest.bind(mcpControl
 app.get('/api/mcp/graphs', mcpController.listGraphs.bind(mcpController));
 
 describe('Tenant Isolation Integration Tests', () => {
-  // Get the mocked bearer middleware
-  const { bearerMiddleware } = require('../../middleware/bearer.middleware');
 
   beforeAll(async () => {
     await testDbHelper.connect();
@@ -27,6 +25,13 @@ describe('Tenant Isolation Integration Tests', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Enable multi-tenancy for isolation tests
+    process.env.ENABLE_MULTI_TENANCY = 'true';
+    process.env.TENANT_GRAPH_PREFIX = 'true';
+    
+    // Reset modules to reload configuration
+    jest.resetModules();
     
     // Set up mock auth middleware to simulate Bearer token behavior
     mockAuthMiddleware.mockImplementation((req: any, res: any, next: any) => {

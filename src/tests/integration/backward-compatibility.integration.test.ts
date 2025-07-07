@@ -2,7 +2,6 @@ import request from 'supertest';
 import express from 'express';
 import { mcpController } from '../../controllers/mcp.controller';
 import { authenticateMCP } from '../../middleware/auth.middleware';
-import { config } from '../../config';
 import { testDbHelper, generateTestGraphName } from '../utils/test-helpers';
 
 const app = express();
@@ -144,8 +143,8 @@ describe('Backward Compatibility Integration Tests', () => {
           query: 'MATCH (n) RETURN n'
         });
 
-      expect(queryParamResponse.status).toBe(400); // Missing graph, but auth passed
-      expect(queryParamResponse.body.error).toBe('Graph name is required');
+      expect(queryParamResponse.status).toBe(200); // Auth passed via query param
+      expect(queryParamResponse.body.metadata.provider).toBe('FalkorDB MCP Server');
     });
 
     test('should handle errors exactly as before', async () => {
@@ -230,7 +229,7 @@ describe('Backward Compatibility Integration Tests', () => {
         'MATCH (a)-[r:CONNECTED]->(b) RETURN a.name, b.name'
       ];
 
-      for (const [index, query] of operations.entries()) {
+      for (const query of operations) {
         const response = await request(app)
           .post('/api/mcp/context')
           .set('x-api-key', 'test-api-key')

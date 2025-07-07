@@ -2,7 +2,14 @@ import request from 'supertest';
 import express from 'express';
 import { mcpController } from '../../controllers/mcp.controller';
 import { authenticateMCP } from '../../middleware/auth.middleware';
-import { testDbHelper, generateTestGraphName } from '../utils/test-helpers';
+import { testDbHelper } from '../utils/test-helpers';
+
+// Mock Bearer middleware for testing
+jest.mock('../../middleware/bearer.middleware', () => ({
+  bearerMiddleware: {
+    validateJWT: jest.fn()
+  }
+}));
 
 const app = express();
 app.use(express.json());
@@ -158,7 +165,7 @@ describe('Configuration Edge Cases Integration Tests', () => {
       process.env.ENABLE_MULTI_TENANCY = 'true';
       process.env.TENANT_GRAPH_PREFIX = 'true';
 
-      const invalidAuthModes = ['jwt', 'bearer', 'oauth', 'invalid', 'api_key', 'oauth2-jwt', ''];
+      const invalidAuthModes = ['jwt', 'oauth', 'invalid', 'api_key', 'oauth2-jwt', 'oauth2', ''];
 
       for (const invalidMode of invalidAuthModes) {
         process.env.MULTI_TENANT_AUTH_MODE = invalidMode;
@@ -435,7 +442,7 @@ describe('Configuration Edge Cases Integration Tests', () => {
       const responses = await Promise.all(requests);
 
       // All requests should complete (not crash), even if they fail
-      responses.forEach((response, index) => {
+      responses.forEach((response) => {
         expect(response.status).toBeGreaterThan(0); // Got some response
         expect(response.status).toBeLessThan(600); // Valid HTTP status
       });
