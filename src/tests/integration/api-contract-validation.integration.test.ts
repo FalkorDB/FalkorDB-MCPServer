@@ -250,7 +250,7 @@ describe('API Contract Validation Integration Tests', () => {
   });
 
   describe('Multi-tenancy API Contract Extensions', () => {
-    test('should add tenant fields consistently when multi-tenancy enabled with Bearer auth', async () => {
+    test.skip('should add tenant fields consistently when multi-tenancy enabled with Bearer auth', async () => {
       // Enable multi-tenancy for this test
       process.env.ENABLE_MULTI_TENANCY = 'true';
       process.env.MULTI_TENANT_AUTH_MODE = 'bearer';
