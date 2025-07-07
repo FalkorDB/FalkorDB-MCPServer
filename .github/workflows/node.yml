@@ -71,6 +71,9 @@ jobs:
     - name: Build
       run: npm run build --if-present
       
+    - name: Install Redis CLI
+      run: sudo apt-get update && sudo apt-get install -y redis-tools
+      
     - name: Wait for FalkorDB
       run: |
         timeout 30 bash -c 'until redis-cli -h localhost -p 6380 ping; do sleep 1; done'
