@@ -184,13 +184,15 @@ describe('API Contract Validation Integration Tests', () => {
           name: 'Missing query',
           request: { graphName: 'test' },
           expectedStatus: 400,
-          expectedError: 'Query is required'
+          expectedError: 'Invalid request parameters',
+          expectedCode: 'VALIDATION_ERROR'
         },
         {
           name: 'Missing graphName',
           request: { query: 'MATCH (n) RETURN n' },
           expectedStatus: 400,
-          expectedError: 'Graph name is required'
+          expectedError: 'Invalid request parameters',
+          expectedCode: 'VALIDATION_ERROR'
         },
         {
           name: 'Missing API key',
@@ -219,41 +221,62 @@ describe('API Contract Validation Integration Tests', () => {
 
         expect(response.status).toBe(testCase.expectedStatus);
         expect(response.body).toHaveProperty('error');
-        expect(response.body.error).toBe(testCase.expectedError);
         
-        // Error responses should have minimal structure
-        const errorKeys = Object.keys(response.body);
-        if (testCase.expectedStatus >= 500) {
-          // Server errors may include metadata
-          expect(errorKeys).toContain('error');
-          if (response.body.metadata) {
-            expect(response.body.metadata).toHaveProperty('timestamp');
-          }
+        if (testCase.expectedCode) {
+          // New validation error format
+          expect(response.body.error).toBe(testCase.expectedError);
+          expect(response.body.code).toBe(testCase.expectedCode);
+          expect(response.body).toHaveProperty('details');
+          expect(response.body).toHaveProperty('metadata');
         } else {
-          // Client errors should only have error field
-          expect(errorKeys).toEqual(['error']);
+          // Legacy error format for auth errors
+          expect(response.body.error).toBe(testCase.expectedError);
+          
+          // Error responses should have minimal structure
+          const errorKeys = Object.keys(response.body);
+          if (testCase.expectedStatus >= 500) {
+            // Server errors may include metadata
+            expect(errorKeys).toContain('error');
+            if (response.body.metadata) {
+              expect(response.body.metadata).toHaveProperty('timestamp');
+            }
+          } else {
+            // Client errors should only have error field for auth errors
+            expect(errorKeys).toEqual(['error']);
+          }
         }
       }
     });
   });
 
   describe('Multi-tenancy API Contract Extensions', () => {
-    test('should add tenant fields consistently when multi-tenancy enabled', async () => {
-      // Simplified test without module reloading to avoid timeout issues
-      const testGraph = 'tenant_contract_test_simple';
+    test('should add tenant fields consistently when multi-tenancy enabled with Bearer auth', async () => {
+      // Enable multi-tenancy for this test
+      process.env.ENABLE_MULTI_TENANCY = 'true';
+      process.env.MULTI_TENANT_AUTH_MODE = 'bearer';
+      jest.resetModules();
+      
+      // Setup bearer token mock that injects tenantId
+      const { bearerMiddleware } = await import('../../middleware/bearer.middleware');
+      (bearerMiddleware.validateJWT as jest.Mock).mockImplementation((req: any, res: any, next: any) => {
+        req.tenantId = 'test-tenant-123';
+        next();
+      });
+
+      const testGraph = 'tenant_contract_test_bearer';
       await testDbHelper.createTestGraph(testGraph);
 
-      // Test with API key authentication (which supports tenant context through other means)
+      // Test with Bearer token authentication - the mock will inject tenantId
       const contextResponse = await request(app)
         .post('/api/mcp/context')
-        .set('x-api-key', 'test-api-key')
+        .set('Authorization', 'Bearer test-jwt-token')
         .send({
           graphName: testGraph,
           query: 'CREATE (n:Test {tenant: "test"}) RETURN n'
         });
 
       expect(contextResponse.status).toBe(200);
-      // In this simplified test, we verify the API contract structure rather than bearer token tenant extraction
+      expect(contextResponse.body.metadata.tenantId).toBe('test-tenant-123');
       
       // Validate that base contract is preserved
       expect(contextResponse.body).toHaveProperty('data');
@@ -261,10 +284,10 @@ describe('API Contract Validation Integration Tests', () => {
       expect(contextResponse.body.metadata.provider).toBe('FalkorDB MCP Server');
       expect(contextResponse.body.metadata.source).toBe('falkordb');
 
-      // Test graphs endpoint response includes tenant information
+      // Test graphs endpoint response with bearer token
       const graphsResponse = await request(app)
         .get('/api/mcp/graphs')
-        .set('Authorization', 'Bearer test-jwt');
+        .set('Authorization', 'Bearer test-jwt-token');
 
       expect(graphsResponse.status).toBe(200);
       expect(graphsResponse.body.metadata.tenantId).toBe('test-tenant-123');
