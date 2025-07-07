@@ -160,6 +160,7 @@ describe('Backward Compatibility Integration Tests', () => {
       expect(invalidQueryResponse.status).toBe(500);
       expect(invalidQueryResponse.body).toEqual({
         error: expect.any(String),
+        code: expect.any(String),
         metadata: {
           timestamp: expect.any(String)
           // Should NOT have tenantId even in errors

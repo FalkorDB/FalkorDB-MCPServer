@@ -156,7 +156,16 @@ describe('API Integration Tests', () => {
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Query is required');
+      expect(response.body.error).toBe('Invalid request parameters');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'query',
+            message: 'Query is required'
+          })
+        ])
+      );
     });
 
     test('should require graphName in request body', async () => {
@@ -168,7 +177,16 @@ describe('API Integration Tests', () => {
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Graph name is required');
+      expect(response.body.error).toBe('Invalid request parameters');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'graphName',
+            message: 'Graph name is required'
+          })
+        ])
+      );
     });
 
     test('should execute simple query successfully', async () => {
@@ -275,14 +293,21 @@ describe('API Integration Tests', () => {
     });
   });
 
-  describe('GET /api/mcp/health', () => {
+  describe('GET /health', () => {
     test('should return health status', async () => {
       const response = await request(app)
-        .get('/api/mcp/health')
-        .set('x-api-key', testConfig.apiKey);
+        .get('/health');
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ status: 'ok' });
+      expect(response.body).toMatchObject({
+        status: 'healthy',
+        timestamp: expect.any(String),
+        services: {
+          database: {
+            connected: expect.any(Boolean)
+          }
+        }
+      });
     });
   });
 
