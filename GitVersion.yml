@@ -1,0 +1,49 @@
+mode: ContinuousDeployment
+next-version: 1.0.0
+branches:
+  stable:
+    regex: ^stable$
+    mode: ContinuousDeployment
+    tag: ''
+    increment: Patch
+    prevent-increment-of-merged-branch-version: true
+    track-merge-target: false
+    source-branches: ['main']
+    tracks-release-branches: false
+    is-release-branch: true
+    is-mainline: true
+  main:
+    regex: ^main$
+    mode: ContinuousDeployment
+    tag: ''
+    increment: Patch
+    prevent-increment-of-merged-branch-version: true
+    track-merge-target: false
+    tracks-release-branches: false
+    is-release-branch: true
+    is-mainline: true
+  dev:
+    regex: ^dev$
+    mode: ContinuousDeployment
+    tag: 'alpha'
+    increment: Patch
+    prevent-increment-of-merged-branch-version: true
+    track-merge-target: false
+    source-branches: ['stable']
+    tracks-release-branches: false
+    is-release-branch: false
+    is-mainline: false
+  feature:
+    regex: ^features?[/-]
+    mode: ContinuousDeployment
+    tag: 'alpha'
+    increment: Patch
+    prevent-increment-of-merged-branch-version: true
+    track-merge-target: false
+    source-branches: ['stable', 'dev']
+    tracks-release-branches: false
+    is-release-branch: false
+    is-mainline: false
+ignore:
+  sha: []
+merge-message-formats: {}

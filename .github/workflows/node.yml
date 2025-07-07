@@ -62,7 +62,8 @@ jobs:
       id: gitversion
       uses: gittools/actions/gitversion/execute@v1.1.1
       with:
-        useConfigFile: false
+        useConfigFile: true
+        configFilePath: GitVersion.yml
     
     - name: Create GitHub Release
       if: steps.gitversion.outputs.commitsSinceVersionSource == '0'
