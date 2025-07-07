@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  falkordb-test:
+    image: falkordb/falkordb:latest
+    container_name: falkordb-test
+    ports:
+      - "6380:6379"  # Different port for testing to avoid conflicts
+    environment:
+      - FALKORDB_TEST_MODE=true
+    volumes:
+      - falkordb-test-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6379", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - test-network
+
+volumes:
+  falkordb-test-data:
+    driver: local
+
+networks:
+  test-network:
+    driver: bridge

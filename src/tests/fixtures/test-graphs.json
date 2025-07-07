@@ -1,0 +1,59 @@
+{
+  "testGraphs": [
+    {
+      "name": "test_users_projects",
+      "description": "Test graph with users, projects, and relationships",
+      "dataFile": "test-data.cypher",
+      "expectedNodes": {
+        "User": 3,
+        "Project": 3,
+        "Category": 3
+      },
+      "expectedRelationships": {
+        "WORKS_ON": 4,
+        "COLLABORATES_WITH": 1,
+        "BELONGS_TO": 4
+      }
+    },
+    {
+      "name": "test_empty_graph",
+      "description": "Empty test graph for testing graph creation",
+      "dataFile": null,
+      "expectedNodes": {},
+      "expectedRelationships": {}
+    },
+    {
+      "name": "test_simple_graph",
+      "description": "Simple graph with minimal data for basic tests",
+      "queries": [
+        "CREATE (n:TestNode {id: 1, value: 'test'})",
+        "CREATE (m:TestNode {id: 2, value: 'another'})",
+        "CREATE (n)-[:RELATES_TO]->(m)"
+      ],
+      "expectedNodes": {
+        "TestNode": 2
+      },
+      "expectedRelationships": {
+        "RELATES_TO": 1
+      }
+    }
+  ],
+  "testQueries": {
+    "basic": {
+      "getAllUsers": "MATCH (u:User) RETURN u ORDER BY u.id",
+      "getAllProjects": "MATCH (p:Project) RETURN p ORDER BY p.id",
+      "getUsersWithProjects": "MATCH (u:User)-[r:WORKS_ON]->(p:Project) RETURN u.name, p.name, r.role",
+      "countNodes": "MATCH (n) RETURN count(n) as total",
+      "countRelationships": "MATCH ()-[r]->() RETURN count(r) as total"
+    },
+    "parameterized": {
+      "getUserById": "MATCH (u:User {id: $userId}) RETURN u",
+      "getProjectsByStatus": "MATCH (p:Project {status: $status}) RETURN p",
+      "getUsersOnProject": "MATCH (u:User)-[:WORKS_ON]->(p:Project {id: $projectId}) RETURN u"
+    },
+    "complex": {
+      "userProjectStats": "MATCH (u:User)-[r:WORKS_ON]->(p:Project) RETURN u.name, count(p) as project_count, collect(p.name) as projects",
+      "activeProjectCollaborators": "MATCH (u1:User)-[:WORKS_ON]->(p:Project {status: 'active'})<-[:WORKS_ON]-(u2:User) WHERE u1.id < u2.id RETURN u1.name, u2.name, p.name"
+    }
+  }
+}
