@@ -23,6 +23,32 @@ app.get('/', (req, res) => {
   });
 });
 
+// Health check endpoint
+app.get('/health', async (req, res) => {
+  try {
+    const dbHealth = await falkorDBService.healthCheck();
+    const status = dbHealth.connected ? 'healthy' : 'unhealthy';
+    const statusCode = dbHealth.connected ? 200 : 503;
+    
+    res.status(statusCode).json({
+      status,
+      timestamp: new Date().toISOString(),
+      services: {
+        database: {
+          connected: dbHealth.connected,
+          latency: dbHealth.latency
+        }
+      }
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: 'Health check failed'
+    });
+  }
+});
+
 // Start server
 const PORT = config.server.port;
 app.listen(PORT, () => {
