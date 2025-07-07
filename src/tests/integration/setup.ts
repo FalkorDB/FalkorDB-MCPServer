@@ -29,6 +29,10 @@ export async function teardownIntegrationTests(): Promise<void> {
     // Disconnect from database
     await testDbHelper.disconnect();
     
+    // Also clean up the test FalkorDB service
+    const { testFalkorDBService } = await import('../utils/mock-falkordb-service');
+    await testFalkorDBService.close();
+    
     console.log('Integration test teardown completed successfully');
   } catch (error) {
     console.error('Integration test teardown failed:', error);

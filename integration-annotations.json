@@ -1,0 +1,14 @@
+[
+  {
+    "path": ".github",
+    "blob_href": "https://github.com/Dragonatorul/FalkorDB-MCPServer/blob/1f27dd0a483ba667b2a5cc745dd56dde1d69e1df/.github",
+    "start_line": 1013,
+    "start_column": null,
+    "end_line": 1013,
+    "end_column": null,
+    "annotation_level": "failure",
+    "title": "",
+    "message": "Process completed with exit code 1.",
+    "raw_details": ""
+  }
+]

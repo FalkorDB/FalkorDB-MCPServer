@@ -1,0 +1,1293 @@
+{
+  "total_count": 8,
+  "check_runs": [
+    {
+      "id": 45489825041,
+      "name": "version",
+      "node_id": "CR_kwDOPH_sPc8AAAAKl2elEQ",
+      "head_sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+      "external_id": "fe2bbbc3-7b58-5aca-aa9e-486e669f38f5",
+      "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489825041",
+      "html_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489825041",
+      "details_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489825041",
+      "status": "completed",
+      "conclusion": "skipped",
+      "started_at": "2025-07-07T16:03:12Z",
+      "completed_at": "2025-07-07T16:03:12Z",
+      "output": {
+        "title": null,
+        "summary": null,
+        "text": null,
+        "annotations_count": 0,
+        "annotations_url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489825041/annotations"
+      },
+      "check_suite": {
+        "id": 41302011921
+      },
+      "app": {
+        "id": 15368,
+        "client_id": "Iv1.05c79e9ad1f6bdfa",
+        "slug": "github-actions",
+        "node_id": "MDM6QXBwMTUzNjg=",
+        "owner": {
+          "login": "github",
+          "id": 9919,
+          "node_id": "MDEyOk9yZ2FuaXphdGlvbjk5MTk=",
+          "avatar_url": "https://avatars.githubusercontent.com/u/9919?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/github",
+          "html_url": "https://github.com/github",
+          "followers_url": "https://api.github.com/users/github/followers",
+          "following_url": "https://api.github.com/users/github/following{/other_user}",
+          "gists_url": "https://api.github.com/users/github/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/github/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/github/subscriptions",
+          "organizations_url": "https://api.github.com/users/github/orgs",
+          "repos_url": "https://api.github.com/users/github/repos",
+          "events_url": "https://api.github.com/users/github/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/github/received_events",
+          "type": "Organization",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "name": "GitHub Actions",
+        "description": "Automate your workflow from idea to production",
+        "external_url": "https://help.github.com/en/actions",
+        "html_url": "https://github.com/apps/github-actions",
+        "created_at": "2018-07-30T09:30:17Z",
+        "updated_at": "2025-03-07T16:35:00Z",
+        "permissions": {
+          "actions": "write",
+          "administration": "read",
+          "attestations": "write",
+          "checks": "write",
+          "contents": "write",
+          "deployments": "write",
+          "discussions": "write",
+          "issues": "write",
+          "merge_queues": "write",
+          "metadata": "read",
+          "models": "read",
+          "packages": "write",
+          "pages": "write",
+          "pull_requests": "write",
+          "repository_hooks": "write",
+          "repository_projects": "write",
+          "security_events": "write",
+          "statuses": "write",
+          "vulnerability_alerts": "read"
+        },
+        "events": [
+          "branch_protection_rule",
+          "check_run",
+          "check_suite",
+          "create",
+          "delete",
+          "deployment",
+          "deployment_status",
+          "discussion",
+          "discussion_comment",
+          "fork",
+          "gollum",
+          "issues",
+          "issue_comment",
+          "label",
+          "merge_group",
+          "milestone",
+          "page_build",
+          "project",
+          "project_card",
+          "project_column",
+          "public",
+          "pull_request",
+          "pull_request_review",
+          "pull_request_review_comment",
+          "push",
+          "registry_package",
+          "release",
+          "repository",
+          "repository_dispatch",
+          "status",
+          "watch",
+          "workflow_dispatch",
+          "workflow_run"
+        ]
+      },
+      "pull_requests": [
+        {
+          "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/pulls/1",
+          "id": 2646159774,
+          "number": 1,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "stable",
+            "sha": "89bb8191ce6b913b633dbe195b5565be054abf1b",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        },
+        {
+          "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer/pulls/5",
+          "id": 2646152602,
+          "number": 5,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "main",
+            "sha": "3d94282acfd6cfeaeae4ac6d6226c7c72ae6e331",
+            "repo": {
+              "id": 957626412,
+              "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 45489825023,
+      "name": "docker",
+      "node_id": "CR_kwDOPH_sPc8AAAAKl2ek_w",
+      "head_sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+      "external_id": "10141d6e-4f98-578e-9085-4fc04cb16818",
+      "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489825023",
+      "html_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489825023",
+      "details_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489825023",
+      "status": "completed",
+      "conclusion": "skipped",
+      "started_at": "2025-07-07T16:03:12Z",
+      "completed_at": "2025-07-07T16:03:12Z",
+      "output": {
+        "title": null,
+        "summary": null,
+        "text": null,
+        "annotations_count": 0,
+        "annotations_url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489825023/annotations"
+      },
+      "check_suite": {
+        "id": 41302011921
+      },
+      "app": {
+        "id": 15368,
+        "client_id": "Iv1.05c79e9ad1f6bdfa",
+        "slug": "github-actions",
+        "node_id": "MDM6QXBwMTUzNjg=",
+        "owner": {
+          "login": "github",
+          "id": 9919,
+          "node_id": "MDEyOk9yZ2FuaXphdGlvbjk5MTk=",
+          "avatar_url": "https://avatars.githubusercontent.com/u/9919?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/github",
+          "html_url": "https://github.com/github",
+          "followers_url": "https://api.github.com/users/github/followers",
+          "following_url": "https://api.github.com/users/github/following{/other_user}",
+          "gists_url": "https://api.github.com/users/github/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/github/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/github/subscriptions",
+          "organizations_url": "https://api.github.com/users/github/orgs",
+          "repos_url": "https://api.github.com/users/github/repos",
+          "events_url": "https://api.github.com/users/github/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/github/received_events",
+          "type": "Organization",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "name": "GitHub Actions",
+        "description": "Automate your workflow from idea to production",
+        "external_url": "https://help.github.com/en/actions",
+        "html_url": "https://github.com/apps/github-actions",
+        "created_at": "2018-07-30T09:30:17Z",
+        "updated_at": "2025-03-07T16:35:00Z",
+        "permissions": {
+          "actions": "write",
+          "administration": "read",
+          "attestations": "write",
+          "checks": "write",
+          "contents": "write",
+          "deployments": "write",
+          "discussions": "write",
+          "issues": "write",
+          "merge_queues": "write",
+          "metadata": "read",
+          "models": "read",
+          "packages": "write",
+          "pages": "write",
+          "pull_requests": "write",
+          "repository_hooks": "write",
+          "repository_projects": "write",
+          "security_events": "write",
+          "statuses": "write",
+          "vulnerability_alerts": "read"
+        },
+        "events": [
+          "branch_protection_rule",
+          "check_run",
+          "check_suite",
+          "create",
+          "delete",
+          "deployment",
+          "deployment_status",
+          "discussion",
+          "discussion_comment",
+          "fork",
+          "gollum",
+          "issues",
+          "issue_comment",
+          "label",
+          "merge_group",
+          "milestone",
+          "page_build",
+          "project",
+          "project_card",
+          "project_column",
+          "public",
+          "pull_request",
+          "pull_request_review",
+          "pull_request_review_comment",
+          "push",
+          "registry_package",
+          "release",
+          "repository",
+          "repository_dispatch",
+          "status",
+          "watch",
+          "workflow_dispatch",
+          "workflow_run"
+        ]
+      },
+      "pull_requests": [
+        {
+          "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/pulls/1",
+          "id": 2646159774,
+          "number": 1,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "stable",
+            "sha": "89bb8191ce6b913b633dbe195b5565be054abf1b",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        },
+        {
+          "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer/pulls/5",
+          "id": 2646152602,
+          "number": 5,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "main",
+            "sha": "3d94282acfd6cfeaeae4ac6d6226c7c72ae6e331",
+            "repo": {
+              "id": 957626412,
+              "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 45489824938,
+      "name": "build",
+      "node_id": "CR_kwDOPH_sPc8AAAAKl2ekqg",
+      "head_sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+      "external_id": "120c866f-40da-5741-9a9a-9ce1f394b441",
+      "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489824938",
+      "html_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489824938",
+      "details_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489824938",
+      "status": "completed",
+      "conclusion": "skipped",
+      "started_at": "2025-07-07T16:03:12Z",
+      "completed_at": "2025-07-07T16:03:12Z",
+      "output": {
+        "title": null,
+        "summary": null,
+        "text": null,
+        "annotations_count": 0,
+        "annotations_url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489824938/annotations"
+      },
+      "check_suite": {
+        "id": 41302011921
+      },
+      "app": {
+        "id": 15368,
+        "client_id": "Iv1.05c79e9ad1f6bdfa",
+        "slug": "github-actions",
+        "node_id": "MDM6QXBwMTUzNjg=",
+        "owner": {
+          "login": "github",
+          "id": 9919,
+          "node_id": "MDEyOk9yZ2FuaXphdGlvbjk5MTk=",
+          "avatar_url": "https://avatars.githubusercontent.com/u/9919?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/github",
+          "html_url": "https://github.com/github",
+          "followers_url": "https://api.github.com/users/github/followers",
+          "following_url": "https://api.github.com/users/github/following{/other_user}",
+          "gists_url": "https://api.github.com/users/github/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/github/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/github/subscriptions",
+          "organizations_url": "https://api.github.com/users/github/orgs",
+          "repos_url": "https://api.github.com/users/github/repos",
+          "events_url": "https://api.github.com/users/github/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/github/received_events",
+          "type": "Organization",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "name": "GitHub Actions",
+        "description": "Automate your workflow from idea to production",
+        "external_url": "https://help.github.com/en/actions",
+        "html_url": "https://github.com/apps/github-actions",
+        "created_at": "2018-07-30T09:30:17Z",
+        "updated_at": "2025-03-07T16:35:00Z",
+        "permissions": {
+          "actions": "write",
+          "administration": "read",
+          "attestations": "write",
+          "checks": "write",
+          "contents": "write",
+          "deployments": "write",
+          "discussions": "write",
+          "issues": "write",
+          "merge_queues": "write",
+          "metadata": "read",
+          "models": "read",
+          "packages": "write",
+          "pages": "write",
+          "pull_requests": "write",
+          "repository_hooks": "write",
+          "repository_projects": "write",
+          "security_events": "write",
+          "statuses": "write",
+          "vulnerability_alerts": "read"
+        },
+        "events": [
+          "branch_protection_rule",
+          "check_run",
+          "check_suite",
+          "create",
+          "delete",
+          "deployment",
+          "deployment_status",
+          "discussion",
+          "discussion_comment",
+          "fork",
+          "gollum",
+          "issues",
+          "issue_comment",
+          "label",
+          "merge_group",
+          "milestone",
+          "page_build",
+          "project",
+          "project_card",
+          "project_column",
+          "public",
+          "pull_request",
+          "pull_request_review",
+          "pull_request_review_comment",
+          "push",
+          "registry_package",
+          "release",
+          "repository",
+          "repository_dispatch",
+          "status",
+          "watch",
+          "workflow_dispatch",
+          "workflow_run"
+        ]
+      },
+      "pull_requests": [
+        {
+          "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/pulls/1",
+          "id": 2646159774,
+          "number": 1,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "stable",
+            "sha": "89bb8191ce6b913b633dbe195b5565be054abf1b",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        },
+        {
+          "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer/pulls/5",
+          "id": 2646152602,
+          "number": 5,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "main",
+            "sha": "3d94282acfd6cfeaeae4ac6d6226c7c72ae6e331",
+            "repo": {
+              "id": 957626412,
+              "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 45489731998,
+      "name": "unit-tests (18.x)",
+      "node_id": "CR_kwDOPH_sPc8AAAAKl2Y5ng",
+      "head_sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+      "external_id": "4febb1af-3436-565f-be83-0bfd8326a7f6",
+      "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489731998",
+      "html_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489731998",
+      "details_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489731998",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2025-07-07T16:02:02Z",
+      "completed_at": "2025-07-07T16:02:28Z",
+      "output": {
+        "title": null,
+        "summary": null,
+        "text": null,
+        "annotations_count": 0,
+        "annotations_url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489731998/annotations"
+      },
+      "check_suite": {
+        "id": 41302011921
+      },
+      "app": {
+        "id": 15368,
+        "client_id": "Iv1.05c79e9ad1f6bdfa",
+        "slug": "github-actions",
+        "node_id": "MDM6QXBwMTUzNjg=",
+        "owner": {
+          "login": "github",
+          "id": 9919,
+          "node_id": "MDEyOk9yZ2FuaXphdGlvbjk5MTk=",
+          "avatar_url": "https://avatars.githubusercontent.com/u/9919?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/github",
+          "html_url": "https://github.com/github",
+          "followers_url": "https://api.github.com/users/github/followers",
+          "following_url": "https://api.github.com/users/github/following{/other_user}",
+          "gists_url": "https://api.github.com/users/github/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/github/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/github/subscriptions",
+          "organizations_url": "https://api.github.com/users/github/orgs",
+          "repos_url": "https://api.github.com/users/github/repos",
+          "events_url": "https://api.github.com/users/github/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/github/received_events",
+          "type": "Organization",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "name": "GitHub Actions",
+        "description": "Automate your workflow from idea to production",
+        "external_url": "https://help.github.com/en/actions",
+        "html_url": "https://github.com/apps/github-actions",
+        "created_at": "2018-07-30T09:30:17Z",
+        "updated_at": "2025-03-07T16:35:00Z",
+        "permissions": {
+          "actions": "write",
+          "administration": "read",
+          "attestations": "write",
+          "checks": "write",
+          "contents": "write",
+          "deployments": "write",
+          "discussions": "write",
+          "issues": "write",
+          "merge_queues": "write",
+          "metadata": "read",
+          "models": "read",
+          "packages": "write",
+          "pages": "write",
+          "pull_requests": "write",
+          "repository_hooks": "write",
+          "repository_projects": "write",
+          "security_events": "write",
+          "statuses": "write",
+          "vulnerability_alerts": "read"
+        },
+        "events": [
+          "branch_protection_rule",
+          "check_run",
+          "check_suite",
+          "create",
+          "delete",
+          "deployment",
+          "deployment_status",
+          "discussion",
+          "discussion_comment",
+          "fork",
+          "gollum",
+          "issues",
+          "issue_comment",
+          "label",
+          "merge_group",
+          "milestone",
+          "page_build",
+          "project",
+          "project_card",
+          "project_column",
+          "public",
+          "pull_request",
+          "pull_request_review",
+          "pull_request_review_comment",
+          "push",
+          "registry_package",
+          "release",
+          "repository",
+          "repository_dispatch",
+          "status",
+          "watch",
+          "workflow_dispatch",
+          "workflow_run"
+        ]
+      },
+      "pull_requests": [
+        {
+          "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/pulls/1",
+          "id": 2646159774,
+          "number": 1,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "stable",
+            "sha": "89bb8191ce6b913b633dbe195b5565be054abf1b",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        },
+        {
+          "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer/pulls/5",
+          "id": 2646152602,
+          "number": 5,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "main",
+            "sha": "3d94282acfd6cfeaeae4ac6d6226c7c72ae6e331",
+            "repo": {
+              "id": 957626412,
+              "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 45489731988,
+      "name": "unit-tests (20.x)",
+      "node_id": "CR_kwDOPH_sPc8AAAAKl2Y5lA",
+      "head_sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+      "external_id": "1167634a-9c7c-5838-b957-b06faf99119b",
+      "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489731988",
+      "html_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489731988",
+      "details_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489731988",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2025-07-07T16:02:05Z",
+      "completed_at": "2025-07-07T16:02:24Z",
+      "output": {
+        "title": null,
+        "summary": null,
+        "text": null,
+        "annotations_count": 0,
+        "annotations_url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489731988/annotations"
+      },
+      "check_suite": {
+        "id": 41302011921
+      },
+      "app": {
+        "id": 15368,
+        "client_id": "Iv1.05c79e9ad1f6bdfa",
+        "slug": "github-actions",
+        "node_id": "MDM6QXBwMTUzNjg=",
+        "owner": {
+          "login": "github",
+          "id": 9919,
+          "node_id": "MDEyOk9yZ2FuaXphdGlvbjk5MTk=",
+          "avatar_url": "https://avatars.githubusercontent.com/u/9919?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/github",
+          "html_url": "https://github.com/github",
+          "followers_url": "https://api.github.com/users/github/followers",
+          "following_url": "https://api.github.com/users/github/following{/other_user}",
+          "gists_url": "https://api.github.com/users/github/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/github/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/github/subscriptions",
+          "organizations_url": "https://api.github.com/users/github/orgs",
+          "repos_url": "https://api.github.com/users/github/repos",
+          "events_url": "https://api.github.com/users/github/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/github/received_events",
+          "type": "Organization",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "name": "GitHub Actions",
+        "description": "Automate your workflow from idea to production",
+        "external_url": "https://help.github.com/en/actions",
+        "html_url": "https://github.com/apps/github-actions",
+        "created_at": "2018-07-30T09:30:17Z",
+        "updated_at": "2025-03-07T16:35:00Z",
+        "permissions": {
+          "actions": "write",
+          "administration": "read",
+          "attestations": "write",
+          "checks": "write",
+          "contents": "write",
+          "deployments": "write",
+          "discussions": "write",
+          "issues": "write",
+          "merge_queues": "write",
+          "metadata": "read",
+          "models": "read",
+          "packages": "write",
+          "pages": "write",
+          "pull_requests": "write",
+          "repository_hooks": "write",
+          "repository_projects": "write",
+          "security_events": "write",
+          "statuses": "write",
+          "vulnerability_alerts": "read"
+        },
+        "events": [
+          "branch_protection_rule",
+          "check_run",
+          "check_suite",
+          "create",
+          "delete",
+          "deployment",
+          "deployment_status",
+          "discussion",
+          "discussion_comment",
+          "fork",
+          "gollum",
+          "issues",
+          "issue_comment",
+          "label",
+          "merge_group",
+          "milestone",
+          "page_build",
+          "project",
+          "project_card",
+          "project_column",
+          "public",
+          "pull_request",
+          "pull_request_review",
+          "pull_request_review_comment",
+          "push",
+          "registry_package",
+          "release",
+          "repository",
+          "repository_dispatch",
+          "status",
+          "watch",
+          "workflow_dispatch",
+          "workflow_run"
+        ]
+      },
+      "pull_requests": [
+        {
+          "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/pulls/1",
+          "id": 2646159774,
+          "number": 1,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "stable",
+            "sha": "89bb8191ce6b913b633dbe195b5565be054abf1b",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        },
+        {
+          "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer/pulls/5",
+          "id": 2646152602,
+          "number": 5,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "main",
+            "sha": "3d94282acfd6cfeaeae4ac6d6226c7c72ae6e331",
+            "repo": {
+              "id": 957626412,
+              "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 45489731985,
+      "name": "integration-tests (20.x)",
+      "node_id": "CR_kwDOPH_sPc8AAAAKl2Y5kQ",
+      "head_sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+      "external_id": "a1a62192-4f27-5867-8712-4507d375589b",
+      "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489731985",
+      "html_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489731985",
+      "details_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489731985",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "started_at": "2025-07-07T16:02:05Z",
+      "completed_at": "2025-07-07T16:03:12Z",
+      "output": {
+        "title": null,
+        "summary": null,
+        "text": null,
+        "annotations_count": 2,
+        "annotations_url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489731985/annotations"
+      },
+      "check_suite": {
+        "id": 41302011921
+      },
+      "app": {
+        "id": 15368,
+        "client_id": "Iv1.05c79e9ad1f6bdfa",
+        "slug": "github-actions",
+        "node_id": "MDM6QXBwMTUzNjg=",
+        "owner": {
+          "login": "github",
+          "id": 9919,
+          "node_id": "MDEyOk9yZ2FuaXphdGlvbjk5MTk=",
+          "avatar_url": "https://avatars.githubusercontent.com/u/9919?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/github",
+          "html_url": "https://github.com/github",
+          "followers_url": "https://api.github.com/users/github/followers",
+          "following_url": "https://api.github.com/users/github/following{/other_user}",
+          "gists_url": "https://api.github.com/users/github/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/github/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/github/subscriptions",
+          "organizations_url": "https://api.github.com/users/github/orgs",
+          "repos_url": "https://api.github.com/users/github/repos",
+          "events_url": "https://api.github.com/users/github/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/github/received_events",
+          "type": "Organization",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "name": "GitHub Actions",
+        "description": "Automate your workflow from idea to production",
+        "external_url": "https://help.github.com/en/actions",
+        "html_url": "https://github.com/apps/github-actions",
+        "created_at": "2018-07-30T09:30:17Z",
+        "updated_at": "2025-03-07T16:35:00Z",
+        "permissions": {
+          "actions": "write",
+          "administration": "read",
+          "attestations": "write",
+          "checks": "write",
+          "contents": "write",
+          "deployments": "write",
+          "discussions": "write",
+          "issues": "write",
+          "merge_queues": "write",
+          "metadata": "read",
+          "models": "read",
+          "packages": "write",
+          "pages": "write",
+          "pull_requests": "write",
+          "repository_hooks": "write",
+          "repository_projects": "write",
+          "security_events": "write",
+          "statuses": "write",
+          "vulnerability_alerts": "read"
+        },
+        "events": [
+          "branch_protection_rule",
+          "check_run",
+          "check_suite",
+          "create",
+          "delete",
+          "deployment",
+          "deployment_status",
+          "discussion",
+          "discussion_comment",
+          "fork",
+          "gollum",
+          "issues",
+          "issue_comment",
+          "label",
+          "merge_group",
+          "milestone",
+          "page_build",
+          "project",
+          "project_card",
+          "project_column",
+          "public",
+          "pull_request",
+          "pull_request_review",
+          "pull_request_review_comment",
+          "push",
+          "registry_package",
+          "release",
+          "repository",
+          "repository_dispatch",
+          "status",
+          "watch",
+          "workflow_dispatch",
+          "workflow_run"
+        ]
+      },
+      "pull_requests": [
+        {
+          "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/pulls/1",
+          "id": 2646159774,
+          "number": 1,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "stable",
+            "sha": "89bb8191ce6b913b633dbe195b5565be054abf1b",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        },
+        {
+          "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer/pulls/5",
+          "id": 2646152602,
+          "number": 5,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "main",
+            "sha": "3d94282acfd6cfeaeae4ac6d6226c7c72ae6e331",
+            "repo": {
+              "id": 957626412,
+              "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 45489731978,
+      "name": "unit-tests (16.x)",
+      "node_id": "CR_kwDOPH_sPc8AAAAKl2Y5ig",
+      "head_sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+      "external_id": "847df0ca-17d2-5de7-8bd1-615e17156a18",
+      "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489731978",
+      "html_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489731978",
+      "details_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489731978",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2025-07-07T16:02:03Z",
+      "completed_at": "2025-07-07T16:02:25Z",
+      "output": {
+        "title": null,
+        "summary": null,
+        "text": null,
+        "annotations_count": 0,
+        "annotations_url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489731978/annotations"
+      },
+      "check_suite": {
+        "id": 41302011921
+      },
+      "app": {
+        "id": 15368,
+        "client_id": "Iv1.05c79e9ad1f6bdfa",
+        "slug": "github-actions",
+        "node_id": "MDM6QXBwMTUzNjg=",
+        "owner": {
+          "login": "github",
+          "id": 9919,
+          "node_id": "MDEyOk9yZ2FuaXphdGlvbjk5MTk=",
+          "avatar_url": "https://avatars.githubusercontent.com/u/9919?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/github",
+          "html_url": "https://github.com/github",
+          "followers_url": "https://api.github.com/users/github/followers",
+          "following_url": "https://api.github.com/users/github/following{/other_user}",
+          "gists_url": "https://api.github.com/users/github/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/github/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/github/subscriptions",
+          "organizations_url": "https://api.github.com/users/github/orgs",
+          "repos_url": "https://api.github.com/users/github/repos",
+          "events_url": "https://api.github.com/users/github/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/github/received_events",
+          "type": "Organization",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "name": "GitHub Actions",
+        "description": "Automate your workflow from idea to production",
+        "external_url": "https://help.github.com/en/actions",
+        "html_url": "https://github.com/apps/github-actions",
+        "created_at": "2018-07-30T09:30:17Z",
+        "updated_at": "2025-03-07T16:35:00Z",
+        "permissions": {
+          "actions": "write",
+          "administration": "read",
+          "attestations": "write",
+          "checks": "write",
+          "contents": "write",
+          "deployments": "write",
+          "discussions": "write",
+          "issues": "write",
+          "merge_queues": "write",
+          "metadata": "read",
+          "models": "read",
+          "packages": "write",
+          "pages": "write",
+          "pull_requests": "write",
+          "repository_hooks": "write",
+          "repository_projects": "write",
+          "security_events": "write",
+          "statuses": "write",
+          "vulnerability_alerts": "read"
+        },
+        "events": [
+          "branch_protection_rule",
+          "check_run",
+          "check_suite",
+          "create",
+          "delete",
+          "deployment",
+          "deployment_status",
+          "discussion",
+          "discussion_comment",
+          "fork",
+          "gollum",
+          "issues",
+          "issue_comment",
+          "label",
+          "merge_group",
+          "milestone",
+          "page_build",
+          "project",
+          "project_card",
+          "project_column",
+          "public",
+          "pull_request",
+          "pull_request_review",
+          "pull_request_review_comment",
+          "push",
+          "registry_package",
+          "release",
+          "repository",
+          "repository_dispatch",
+          "status",
+          "watch",
+          "workflow_dispatch",
+          "workflow_run"
+        ]
+      },
+      "pull_requests": [
+        {
+          "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/pulls/1",
+          "id": 2646159774,
+          "number": 1,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "stable",
+            "sha": "89bb8191ce6b913b633dbe195b5565be054abf1b",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        },
+        {
+          "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer/pulls/5",
+          "id": 2646152602,
+          "number": 5,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "main",
+            "sha": "3d94282acfd6cfeaeae4ac6d6226c7c72ae6e331",
+            "repo": {
+              "id": 957626412,
+              "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 45489731970,
+      "name": "integration-tests (18.x)",
+      "node_id": "CR_kwDOPH_sPc8AAAAKl2Y5gg",
+      "head_sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+      "external_id": "28464b62-a2a3-51e8-827b-6fc1c71cbe9f",
+      "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489731970",
+      "html_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489731970",
+      "details_url": "https://github.com/Dragonatorul/FalkorDB-MCPServer/actions/runs/16121960881/job/45489731970",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2025-07-07T16:02:04Z",
+      "completed_at": "2025-07-07T16:02:56Z",
+      "output": {
+        "title": null,
+        "summary": null,
+        "text": null,
+        "annotations_count": 1,
+        "annotations_url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/check-runs/45489731970/annotations"
+      },
+      "check_suite": {
+        "id": 41302011921
+      },
+      "app": {
+        "id": 15368,
+        "client_id": "Iv1.05c79e9ad1f6bdfa",
+        "slug": "github-actions",
+        "node_id": "MDM6QXBwMTUzNjg=",
+        "owner": {
+          "login": "github",
+          "id": 9919,
+          "node_id": "MDEyOk9yZ2FuaXphdGlvbjk5MTk=",
+          "avatar_url": "https://avatars.githubusercontent.com/u/9919?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/github",
+          "html_url": "https://github.com/github",
+          "followers_url": "https://api.github.com/users/github/followers",
+          "following_url": "https://api.github.com/users/github/following{/other_user}",
+          "gists_url": "https://api.github.com/users/github/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/github/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/github/subscriptions",
+          "organizations_url": "https://api.github.com/users/github/orgs",
+          "repos_url": "https://api.github.com/users/github/repos",
+          "events_url": "https://api.github.com/users/github/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/github/received_events",
+          "type": "Organization",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "name": "GitHub Actions",
+        "description": "Automate your workflow from idea to production",
+        "external_url": "https://help.github.com/en/actions",
+        "html_url": "https://github.com/apps/github-actions",
+        "created_at": "2018-07-30T09:30:17Z",
+        "updated_at": "2025-03-07T16:35:00Z",
+        "permissions": {
+          "actions": "write",
+          "administration": "read",
+          "attestations": "write",
+          "checks": "write",
+          "contents": "write",
+          "deployments": "write",
+          "discussions": "write",
+          "issues": "write",
+          "merge_queues": "write",
+          "metadata": "read",
+          "models": "read",
+          "packages": "write",
+          "pages": "write",
+          "pull_requests": "write",
+          "repository_hooks": "write",
+          "repository_projects": "write",
+          "security_events": "write",
+          "statuses": "write",
+          "vulnerability_alerts": "read"
+        },
+        "events": [
+          "branch_protection_rule",
+          "check_run",
+          "check_suite",
+          "create",
+          "delete",
+          "deployment",
+          "deployment_status",
+          "discussion",
+          "discussion_comment",
+          "fork",
+          "gollum",
+          "issues",
+          "issue_comment",
+          "label",
+          "merge_group",
+          "milestone",
+          "page_build",
+          "project",
+          "project_card",
+          "project_column",
+          "public",
+          "pull_request",
+          "pull_request_review",
+          "pull_request_review_comment",
+          "push",
+          "registry_package",
+          "release",
+          "repository",
+          "repository_dispatch",
+          "status",
+          "watch",
+          "workflow_dispatch",
+          "workflow_run"
+        ]
+      },
+      "pull_requests": [
+        {
+          "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer/pulls/1",
+          "id": 2646159774,
+          "number": 1,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "stable",
+            "sha": "89bb8191ce6b913b633dbe195b5565be054abf1b",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        },
+        {
+          "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer/pulls/5",
+          "id": 2646152602,
+          "number": 5,
+          "head": {
+            "ref": "feature/multi-tenant-support",
+            "sha": "1f27dd0a483ba667b2a5cc745dd56dde1d69e1df",
+            "repo": {
+              "id": 1015016509,
+              "url": "https://api.github.com/repos/Dragonatorul/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          },
+          "base": {
+            "ref": "main",
+            "sha": "3d94282acfd6cfeaeae4ac6d6226c7c72ae6e331",
+            "repo": {
+              "id": 957626412,
+              "url": "https://api.github.com/repos/FalkorDB/FalkorDB-MCPServer",
+              "name": "FalkorDB-MCPServer"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

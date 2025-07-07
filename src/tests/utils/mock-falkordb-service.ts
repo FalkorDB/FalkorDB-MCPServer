@@ -3,12 +3,17 @@ import { testConfig } from './test-helpers';
 
 class TestFalkorDBService {
   private client: FalkorDB | null = null;
+  private isClosing: boolean = false;
 
   constructor() {
     this.init();
   }
 
   private async init() {
+    if (this.isClosing) {
+      return; // Don't initialize if we're in the process of closing
+    }
+    
     try {
       this.client = await FalkorDB.connect({
         socket: {
@@ -22,11 +27,17 @@ class TestFalkorDBService {
       // Test connection
       const connection = await this.client.connection;
       await connection.ping();
-      console.log('Successfully connected to Test FalkorDB');
+      
+      // Only log if we're not closing
+      if (!this.isClosing) {
+        console.log('Successfully connected to Test FalkorDB');
+      }
     } catch (error) {
-      console.error('Failed to connect to Test FalkorDB:', error);
-      // Retry connection after a delay
-      setTimeout(() => this.init(), 5000);
+      if (!this.isClosing) {
+        console.error('Failed to connect to Test FalkorDB:', error);
+        // Retry connection after a delay
+        setTimeout(() => this.init(), 5000);
+      }
     }
   }
 
@@ -60,8 +71,13 @@ class TestFalkorDBService {
   }
 
   async close() {
+    this.isClosing = true;
     if (this.client) {
-      await this.client.close();
+      try {
+        await this.client.close();
+      } catch (error) {
+        // Ignore close errors
+      }
       this.client = null;
     }
   }
