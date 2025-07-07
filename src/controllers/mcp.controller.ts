@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import { falkorDBService } from '../services/falkordb.service';
-import { TenantRequest } from '../middleware/oauth2.middleware';
 
 import { 
   MCPContextRequest, 
   MCPResponse, 
-  MCPProviderMetadata 
+  MCPProviderMetadata,
+  TenantRequest
 } from '../models/mcp.types';
 
 export class MCPController {

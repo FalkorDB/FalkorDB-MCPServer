@@ -18,8 +18,8 @@ app.post('/api/mcp/context', mcpController.processContextRequest.bind(mcpControl
 app.get('/api/mcp/graphs', mcpController.listGraphs.bind(mcpController));
 
 describe('Tenant Isolation Integration Tests', () => {
-  // Get the mocked OAuth2 middleware
-  const { oauth2Middleware } = require('../../middleware/oauth2.middleware');
+  // Get the mocked bearer middleware
+  const { bearerMiddleware } = require('../../middleware/bearer.middleware');
 
   beforeAll(async () => {
     await testDbHelper.connect();
@@ -28,7 +28,7 @@ describe('Tenant Isolation Integration Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     
-    // Set up mock auth middleware to simulate OAuth2 behavior
+    // Set up mock auth middleware to simulate Bearer token behavior
     mockAuthMiddleware.mockImplementation((req: any, res: any, next: any) => {
       // Default behavior - will be overridden per test
       next();

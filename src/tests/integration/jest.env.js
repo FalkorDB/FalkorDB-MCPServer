@@ -9,10 +9,12 @@ process.env.MCP_API_KEY = 'test-api-key';
 
 // Set multi-tenancy environment variables for tenant isolation tests
 process.env.ENABLE_MULTI_TENANCY = 'true';
-process.env.MULTI_TENANT_AUTH_MODE = 'oauth2';
+process.env.MULTI_TENANT_AUTH_MODE = 'bearer';
 process.env.TENANT_GRAPH_PREFIX = 'true';
-process.env.OAUTH2_JWKS_URL = 'https://example.com/.well-known/jwks.json';
-process.env.OAUTH2_ISSUER = 'https://example.com';
+process.env.BEARER_JWKS_URI = 'https://example.com/.well-known/jwks.json';
+process.env.BEARER_ISSUER = 'https://example.com';
+process.env.BEARER_ALGORITHM = 'RS256';
+process.env.BEARER_AUDIENCE = 'test-audience';
 
 // Disable logging during tests (optional)
 if (process.env.DISABLE_TEST_LOGS === 'true') {

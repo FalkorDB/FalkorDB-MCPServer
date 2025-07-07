@@ -1,15 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { config } from '../config';
-import { oauth2Middleware, TenantRequest } from './oauth2.middleware';
+import { bearerMiddleware } from './bearer.middleware';
+import { TenantRequest } from '../models/mcp.types';
 
 /**
  * Middleware to authenticate MCP API requests
- * Supports both API key and OAuth2 JWT authentication based on configuration
+ * Supports both API key and Bearer JWT authentication based on configuration
  */
 export const authenticateMCP = async (req: TenantRequest, res: Response, next: NextFunction): Promise<Response<any, Record<string, any>> | void> => {
-  // Multi-tenancy with OAuth2 JWT
-  if (config.multiTenancy.enabled && config.multiTenancy.authMode === 'oauth2') {
-    return await oauth2Middleware.validateJWT(req, res, next);
+  // Multi-tenancy with Bearer JWT
+  if (config.multiTenancy.enabled && config.multiTenancy.authMode === 'bearer') {
+    return await bearerMiddleware.validateJWT(req, res, next);
   }
   
   // Standard API key authentication (default behavior)

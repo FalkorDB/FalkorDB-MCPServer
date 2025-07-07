@@ -31,6 +31,12 @@ describe('Backward Compatibility Integration Tests', () => {
       process.env.TENANT_GRAPH_PREFIX = 'false';
       process.env.MCP_API_KEY = 'test-api-key';
       
+      // Clean up bearer-specific env vars
+      delete process.env.BEARER_JWKS_URI;
+      delete process.env.BEARER_ISSUER;
+      delete process.env.BEARER_ALGORITHM;
+      delete process.env.BEARER_AUDIENCE;
+      
       // Reload config
       jest.resetModules();
     });
@@ -247,8 +253,10 @@ describe('Backward Compatibility Integration Tests', () => {
       delete process.env.ENABLE_MULTI_TENANCY;
       delete process.env.MULTI_TENANT_AUTH_MODE;
       delete process.env.TENANT_GRAPH_PREFIX;
-      delete process.env.OAUTH2_JWKS_URL;
-      delete process.env.OAUTH2_ISSUER;
+      delete process.env.BEARER_JWKS_URI;
+      delete process.env.BEARER_ISSUER;
+      delete process.env.BEARER_ALGORITHM;
+      delete process.env.BEARER_AUDIENCE;
       
       jest.resetModules();
 
@@ -268,8 +276,10 @@ describe('Backward Compatibility Integration Tests', () => {
       process.env.ENABLE_MULTI_TENANCY = '';
       process.env.MULTI_TENANT_AUTH_MODE = '';
       process.env.TENANT_GRAPH_PREFIX = '';
-      process.env.OAUTH2_JWKS_URL = '';
-      process.env.OAUTH2_ISSUER = '';
+      process.env.BEARER_JWKS_URI = '';
+      process.env.BEARER_ISSUER = '';
+      process.env.BEARER_ALGORITHM = '';
+      process.env.BEARER_AUDIENCE = '';
       
       jest.resetModules();
 

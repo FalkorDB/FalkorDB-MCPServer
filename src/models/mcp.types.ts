@@ -2,6 +2,12 @@
  * MCP Types - based on Model Context Protocol specification
  */
 
+import { Request } from 'express';
+
+export interface TenantRequest extends Request {
+  tenantId?: string;
+}
+
 export interface MCPContextRequest {
   graphName: string;
   query: string;

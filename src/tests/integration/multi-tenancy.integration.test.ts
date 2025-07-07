@@ -8,11 +8,10 @@ import { falkorDBService } from '../../services/falkordb.service';
 // Mock dependencies
 jest.mock('../../config');
 jest.mock('../../services/falkordb.service');
-jest.mock('../../middleware/oauth2.middleware', () => ({
-  oauth2Middleware: {
+jest.mock('../../middleware/bearer.middleware', () => ({
+  bearerMiddleware: {
     validateJWT: jest.fn()
-  },
-  TenantRequest: {}
+  }
 }));
 
 const mockConfig = config as jest.Mocked<typeof config>;
@@ -38,9 +37,11 @@ describe('Multi-Tenancy Integration Tests', () => {
     mockConfig.multiTenancy = {
       enabled: false,
       authMode: 'api-key',
-      oauth2: {
-        jwksUrl: '',
-        issuer: ''
+      bearer: {
+        jwksUri: '',
+        issuer: '',
+        algorithm: 'RS256',
+        audience: ''
       },
       tenantGraphPrefix: false
     };
@@ -129,19 +130,19 @@ describe('Multi-Tenancy Integration Tests', () => {
     });
   });
 
-  describe('Multi-tenancy enabled with OAuth2 mode', () => {
+  describe('Multi-tenancy enabled with Bearer mode', () => {
     beforeEach(() => {
       mockConfig.multiTenancy.enabled = true;
-      mockConfig.multiTenancy.authMode = 'oauth2';
+      mockConfig.multiTenancy.authMode = 'bearer';
       mockConfig.multiTenancy.tenantGraphPrefix = true;
-      mockConfig.multiTenancy.oauth2.jwksUrl = 'https://example.com/.well-known/jwks.json';
-      mockConfig.multiTenancy.oauth2.issuer = 'https://example.com';
+      mockConfig.multiTenancy.bearer.jwksUri = 'https://example.com/.well-known/jwks.json';
+      mockConfig.multiTenancy.bearer.issuer = 'https://example.com';
     });
 
-    test('should handle OAuth2 authentication with tenant context', async () => {
+    test('should handle Bearer authentication with tenant context', async () => {
       // Arrange
-      const { oauth2Middleware } = require('../../middleware/oauth2.middleware');
-      oauth2Middleware.validateJWT.mockImplementation((req: any, res: any, next: any) => {
+      const { bearerMiddleware } = require('../../middleware/bearer.middleware');
+      bearerMiddleware.validateJWT.mockImplementation((req: any, res: any, next: any) => {
         req.tenantId = 'tenant1';
         next();
       });
@@ -160,7 +161,7 @@ describe('Multi-Tenancy Integration Tests', () => {
 
       // Assert
       expect(response.status).toBe(200);
-      expect(oauth2Middleware.validateJWT).toHaveBeenCalled();
+      expect(bearerMiddleware.validateJWT).toHaveBeenCalled();
       expect(mockFalkorDBService.executeQuery).toHaveBeenCalledWith(
         'testGraph',
         'MATCH (n) RETURN n',
@@ -170,11 +171,11 @@ describe('Multi-Tenancy Integration Tests', () => {
       expect(response.body.metadata.tenantId).toBe('tenant1');
     });
 
-    test('should handle OAuth2 authentication failure', async () => {
+    test('should handle Bearer authentication failure', async () => {
       // Arrange
-      const { oauth2Middleware } = require('../../middleware/oauth2.middleware');
-      oauth2Middleware.validateJWT.mockImplementation((req: any, res: any, next: any) => {
-        return res.status(401).json({ error: 'Invalid JWT token' });
+      const { bearerMiddleware } = require('../../middleware/bearer.middleware');
+      bearerMiddleware.validateJWT.mockImplementation((req: any, res: any, next: any) => {
+        return res.status(401).json({ error: 'Invalid bearer token' });
       });
 
       // Act
@@ -188,13 +189,13 @@ describe('Multi-Tenancy Integration Tests', () => {
 
       // Assert
       expect(response.status).toBe(401);
-      expect(response.body.error).toBe('Invalid JWT token');
+      expect(response.body.error).toBe('Invalid bearer token');
     });
 
     test('should filter graphs by tenant', async () => {
       // Arrange
-      const { oauth2Middleware } = require('../../middleware/oauth2.middleware');
-      oauth2Middleware.validateJWT.mockImplementation((req: any, res: any, next: any) => {
+      const { bearerMiddleware } = require('../../middleware/bearer.middleware');
+      bearerMiddleware.validateJWT.mockImplementation((req: any, res: any, next: any) => {
         req.tenantId = 'tenant1';
         next();
       });
