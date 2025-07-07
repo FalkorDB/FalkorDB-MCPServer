@@ -2,9 +2,9 @@ name: Node.js CI/CD
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ stable, dev ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ stable ]
 
 jobs:
   unit-tests:
@@ -115,9 +115,57 @@ jobs:
         name: build-artifacts
         path: dist/
         
-  docker:
+  version:
     needs: build
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/stable'
+    runs-on: ubuntu-latest
+    outputs:
+      semVer: ${{ steps.gitversion.outputs.semVer }}
+      fullSemVer: ${{ steps.gitversion.outputs.fullSemVer }}
+      major: ${{ steps.gitversion.outputs.major }}
+      minor: ${{ steps.gitversion.outputs.minor }}
+      patch: ${{ steps.gitversion.outputs.patch }}
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v1.1.1
+      with:
+        versionSpec: '5.x'
+    
+    - name: Determine Version
+      id: gitversion
+      uses: gittools/actions/gitversion/execute@v1.1.1
+      with:
+        useConfigFile: true
+        configFilePath: GitVersion.yml
+    
+    - name: Create GitHub Release
+      if: steps.gitversion.outputs.commitsSinceVersionSource == '0'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.gitversion.outputs.semVer }}
+        name: Release v${{ steps.gitversion.outputs.semVer }}
+        body: |
+          ## Changes in v${{ steps.gitversion.outputs.semVer }}
+          
+          **Docker Images:**
+          - `ghcr.io/${{ github.repository }}:${{ steps.gitversion.outputs.semVer }}`
+          - `ghcr.io/${{ github.repository }}:latest`
+          
+          **Branch:** ${{ steps.gitversion.outputs.branchName }}
+          **Commit:** ${{ steps.gitversion.outputs.sha }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    needs: [build, version]
+    if: github.event_name != 'pull_request' && always() && needs.build.result == 'success'
     runs-on: ubuntu-latest
     
     steps:
@@ -148,6 +196,9 @@ jobs:
           type=sha,format=long
           type=ref,event=branch
           type=ref,event=tag
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=${{ needs.version.outputs.semVer }},enable=${{ needs.version.outputs.semVer != '' }}
+          type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
           
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
