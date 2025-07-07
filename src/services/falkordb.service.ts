@@ -30,6 +30,48 @@ class FalkorDBService {
     }
   }
 
+  private escapeValue(value: any): string {
+    if (value === null || value === undefined) {
+      return 'null';
+    }
+    if (typeof value === 'string') {
+      // Escape quotes and special characters for Cypher
+      return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    if (Array.isArray(value)) {
+      // FalkorDB only supports arrays of primitives
+      const primitiveValues = value.map(v => {
+        if (typeof v === 'object' && v !== null) {
+          return JSON.stringify(v); // Convert objects to JSON strings
+        }
+        return v;
+      });
+      return `[${primitiveValues.map(v => this.escapeValue(v)).join(', ')}]`;
+    }
+    if (typeof value === 'object') {
+      // FalkorDB doesn't support nested objects as property values
+      // Convert to JSON string instead
+      return this.escapeValue(JSON.stringify(value));
+    }
+    return `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+  }
+
+  private substituteParameters(query: string, params?: Record<string, any>): string {
+    if (!params) {
+      return query;
+    }
+
+    let substitutedQuery = query;
+    for (const [key, value] of Object.entries(params)) {
+      const escapedValue = this.escapeValue(value);
+      substitutedQuery = substitutedQuery.replace(new RegExp(`\\$${key}\\b`, 'g'), escapedValue);
+    }
+    return substitutedQuery;
+  }
+
   async executeQuery(graphName: string, query: string, params?: Record<string, any>, tenantId?: string): Promise<any> {
     if (!this.client) {
       throw new Error('FalkorDB client not initialized');
@@ -41,7 +83,11 @@ class FalkorDBService {
       const resolvedGraphName = TenantGraphService.resolveGraphName(graphName, tenantId);
       
       const graph = this.client.selectGraph(resolvedGraphName);
-      const result = await graph.query(query, params);
+      
+      // WORKAROUND: FalkorDB parameter binding is broken, use safe string substitution
+      const finalQuery = this.substituteParameters(query, params);
+      
+      const result = await graph.query(finalQuery);
       return result;
     } catch (error) {
       const sanitizedGraphName = graphName.replace(/\n|\r/g, "");
