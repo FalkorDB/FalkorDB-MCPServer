@@ -46,7 +46,16 @@ describe('MCP Controller', () => {
 
       // Assert
       expect(mockStatus).toHaveBeenCalledWith(400);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'Query is required' });
+      expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Invalid request parameters',
+        code: 'VALIDATION_ERROR',
+        details: expect.arrayContaining([
+          expect.objectContaining({
+            field: 'query',
+            message: 'Query is required'
+          })
+        ])
+      }));
     });
 
     test('should return 400 if graphName is missing', async () => {
@@ -65,7 +74,16 @@ describe('MCP Controller', () => {
 
       // Assert
       expect(mockStatus).toHaveBeenCalledWith(400);
-      expect(mockJson).toHaveBeenCalledWith({ error: 'Graph name is required' });
+      expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Invalid request parameters',
+        code: 'VALIDATION_ERROR',
+        details: expect.arrayContaining([
+          expect.objectContaining({
+            field: 'graphName',
+            message: 'Graph name is required'
+          })
+        ])
+      }));
     });
 
     test('should execute query and return results', async () => {
