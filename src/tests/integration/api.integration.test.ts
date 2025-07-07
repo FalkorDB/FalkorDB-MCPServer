@@ -33,6 +33,29 @@ describe('API Integration Tests', () => {
     app.get('/', (req, res) => {
       res.json({ name: 'FalkorDB MCP Server Test', status: 'running' });
     });
+    
+    // Health check endpoint
+    app.get('/health', async (req, res) => {
+      try {
+        // Mock health check response for tests
+        res.status(200).json({
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          services: {
+            database: {
+              connected: true,
+              latency: 5
+            }
+          }
+        });
+      } catch (error) {
+        res.status(503).json({
+          status: 'unhealthy',
+          timestamp: new Date().toISOString(),
+          error: 'Health check failed'
+        });
+      }
+    });
   });
 
   beforeEach(async () => {
