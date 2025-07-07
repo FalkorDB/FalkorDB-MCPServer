@@ -4,6 +4,8 @@ import { config } from '../config';
 class FalkorDBService {
   private client: FalkorDB | null = null;
   private initPromise: Promise<void> | null = null;
+  private retryCount: number = 0;
+  private maxRetries: number = 5;
 
   constructor() {
     // Don't initialize immediately in constructor
@@ -19,7 +21,8 @@ class FalkorDBService {
 
   private async init() {
     try {
-      this.client = await FalkorDB.connect({
+      // Add connection timeout
+      const connectPromise = FalkorDB.connect({
         socket: {
           host: config.falkorDB.host,
           port: config.falkorDB.port,
@@ -28,14 +31,22 @@ class FalkorDBService {
         username: config.falkorDB.username,
       });
       
-      // Test connection
+      // Apply timeout to connection
+      this.client = await this.withTimeout(connectPromise, 10000, 'Connection timeout');
+      
+      // Test connection with timeout
       const connection = await this.client.connection;
-      await connection.ping();
+      await this.withTimeout(connection.ping(), 5000, 'Ping timeout');
       console.log('Successfully connected to FalkorDB');
     } catch (error) {
       console.error('Failed to connect to FalkorDB:', error);
-      // Retry connection after a delay
-      setTimeout(() => this.init(), 5000);
+      this.client = null;
+      this.initPromise = null;
+      
+      // Retry connection after a delay with exponential backoff
+      const retryDelay = Math.min(5000 * Math.pow(2, this.getRetryCount()), 30000);
+      setTimeout(() => this.init(), retryDelay);
+      throw error;
     }
   }
 
@@ -97,11 +108,28 @@ class FalkorDBService {
       // WORKAROUND: FalkorDB parameter binding is broken, use safe string substitution
       const finalQuery = this.substituteParameters(query, params);
       
-      const result = await graph.query(finalQuery);
+      // Execute query with timeout
+      const result = await this.withTimeout(
+        graph.query(finalQuery),
+        30000,
+        'Query execution timeout'
+      );
+      
+      // Reset retry count on successful operation
+      this.retryCount = 0;
+      
       return result;
     } catch (error) {
       const sanitizedGraphName = graphName.replace(/\n|\r/g, "");
       console.error('Error executing FalkorDB query on graph %s:', sanitizedGraphName, error);
+      
+      // Handle connection errors by resetting client
+      if (this.isConnectionError(error)) {
+        console.log('Connection error detected, resetting client');
+        this.client = null;
+        this.initPromise = null;
+      }
+      
       throw error;
     }
   }
@@ -118,8 +146,12 @@ class FalkorDBService {
     }
 
     try {
-      // Get all graphs from FalkorDB
-      const allGraphs = await this.client.list();
+      // Get all graphs from FalkorDB with timeout
+      const allGraphs = await this.withTimeout(
+        this.client.list(),
+        10000,
+        'List graphs timeout'
+      );
       
       // Import here to avoid circular dependency
       const { TenantGraphService } = await import('./tenant-graph.service');
@@ -128,14 +160,72 @@ class FalkorDBService {
       return TenantGraphService.filterGraphsForTenant(allGraphs, tenantId);
     } catch (error) {
       console.error('Error listing FalkorDB graphs:', error);
+      
+      // Handle connection errors by resetting client
+      if (this.isConnectionError(error)) {
+        console.log('Connection error detected, resetting client');
+        this.client = null;
+        this.initPromise = null;
+      }
+      
       throw error;
     }
   }
 
   async close() {
     if (this.client) {
-      await this.client.close();
-      this.client = null;
+      try {
+        await this.withTimeout(this.client.close(), 5000, 'Close connection timeout');
+      } catch (error) {
+        console.error('Error closing FalkorDB connection:', error);
+      } finally {
+        this.client = null;
+        this.initPromise = null;
+        this.retryCount = 0;
+      }
+    }
+  }
+  
+  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
+    });
+    
+    return Promise.race([promise, timeoutPromise]);
+  }
+  
+  private isConnectionError(error: any): boolean {
+    if (!error || !error.message) return false;
+    
+    const errorMsg = error.message.toLowerCase();
+    return errorMsg.includes('connection') || 
+           errorMsg.includes('timeout') || 
+           errorMsg.includes('network') ||
+           errorMsg.includes('econnrefused') ||
+           errorMsg.includes('enotfound') ||
+           errorMsg.includes('closed');
+  }
+  
+  private getRetryCount(): number {
+    return this.retryCount++;
+  }
+  
+  async healthCheck(): Promise<{ connected: boolean; latency?: number }> {
+    try {
+      await this.ensureInitialized();
+      if (!this.client) {
+        return { connected: false };
+      }
+      
+      const startTime = Date.now();
+      const connection = await this.client.connection;
+      await this.withTimeout(connection.ping(), 5000, 'Health check timeout');
+      const latency = Date.now() - startTime;
+      
+      return { connected: true, latency };
+    } catch (error) {
+      console.error('Health check failed:', error);
+      return { connected: false };
     }
   }
 }
