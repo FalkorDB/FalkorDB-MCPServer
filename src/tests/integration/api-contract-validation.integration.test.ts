@@ -4,9 +4,9 @@ import { mcpController } from '../../controllers/mcp.controller';
 import { authenticateMCP } from '../../middleware/auth.middleware';
 import { testDbHelper, generateTestGraphName } from '../utils/test-helpers';
 
-// Mock OAuth2 middleware for testing
-jest.mock('../../middleware/oauth2.middleware', () => ({
-  oauth2Middleware: {
+// Mock Bearer middleware for testing
+jest.mock('../../middleware/bearer.middleware', () => ({
+  bearerMiddleware: {
     validateJWT: jest.fn()
   }
 }));

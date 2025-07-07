@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { config } from '../config';
 import { bearerMiddleware } from './bearer.middleware';
 import { TenantRequest } from '../models/mcp.types';

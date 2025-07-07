@@ -23,20 +23,25 @@ describe('Configuration Edge Cases Integration Tests', () => {
     delete process.env.ENABLE_MULTI_TENANCY;
     delete process.env.MULTI_TENANT_AUTH_MODE;
     delete process.env.TENANT_GRAPH_PREFIX;
-    delete process.env.OAUTH2_JWKS_URL;
-    delete process.env.OAUTH2_ISSUER;
+    delete process.env.BEARER_JWKS_URI;
+    delete process.env.BEARER_ISSUER;
+    delete process.env.BEARER_ALGORITHM;
+    delete process.env.BEARER_AUDIENCE;
     process.env.MCP_API_KEY = 'test-api-key';
     jest.resetModules();
   });
 
   describe('Environment Variable Edge Cases', () => {
     test('should handle undefined environment variables gracefully', async () => {
-      // Completely remove all multi-tenancy env vars
+      // Completely remove all multi-tenancy env vars but keep API key
       delete process.env.ENABLE_MULTI_TENANCY;
       delete process.env.MULTI_TENANT_AUTH_MODE;
       delete process.env.TENANT_GRAPH_PREFIX;
-      delete process.env.OAUTH2_JWKS_URL;
-      delete process.env.OAUTH2_ISSUER;
+      delete process.env.BEARER_JWKS_URI;
+      delete process.env.BEARER_ISSUER;
+      delete process.env.BEARER_ALGORITHM;
+      delete process.env.BEARER_AUDIENCE;
+      process.env.MCP_API_KEY = 'test-api-key'; // Ensure API key is set
 
       jest.resetModules();
 
@@ -57,8 +62,11 @@ describe('Configuration Edge Cases Integration Tests', () => {
       process.env.ENABLE_MULTI_TENANCY = '';
       process.env.MULTI_TENANT_AUTH_MODE = '';
       process.env.TENANT_GRAPH_PREFIX = '';
-      process.env.OAUTH2_JWKS_URL = '';
-      process.env.OAUTH2_ISSUER = '';
+      process.env.BEARER_JWKS_URI = '';
+      process.env.BEARER_ISSUER = '';
+      process.env.BEARER_ALGORITHM = '';
+      process.env.BEARER_AUDIENCE = '';
+      process.env.MCP_API_KEY = 'test-api-key'; // Ensure API key is set
 
       jest.resetModules();
 
