@@ -42,45 +42,47 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/stable'
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      version-tag: ${{ steps.version.outputs.version-tag }}
+      semVer: ${{ steps.gitversion.outputs.semVer }}
+      fullSemVer: ${{ steps.gitversion.outputs.fullSemVer }}
+      major: ${{ steps.gitversion.outputs.major }}
+      minor: ${{ steps.gitversion.outputs.minor }}
+      patch: ${{ steps.gitversion.outputs.patch }}
     
     steps:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
     
-    - name: Generate semantic version
-      id: version
-      uses: paulhatch/semantic-version@v5.4.0
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v1.1.1
       with:
-        tag_prefix: "v"
-        major_pattern: "(BREAKING CHANGE|feat!|fix!|refactor!)"
-        minor_pattern: "(feat)"
-        patch_pattern: "(fix|docs|test|refactor|perf|style|build|ci|chore)"
-        version_format: "${major}.${minor}.${patch}"
-        bump_each_commit: false
-        search_commit_body: true
-        user_format_type: "csv"
+        versionSpec: '5.x'
+    
+    - name: Determine Version
+      id: gitversion
+      uses: gittools/actions/gitversion/execute@v1.1.1
+      with:
+        useConfigFile: false
     
     - name: Create GitHub Release
-      if: steps.version.outputs.changed == 'true'
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      if: steps.gitversion.outputs.commitsSinceVersionSource == '0'
+      uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ steps.version.outputs.version-tag }}
-        release_name: Release ${{ steps.version.outputs.version }}
+        tag_name: v${{ steps.gitversion.outputs.semVer }}
+        name: Release v${{ steps.gitversion.outputs.semVer }}
         body: |
-          ## Changes in ${{ steps.version.outputs.version }}
+          ## Changes in v${{ steps.gitversion.outputs.semVer }}
           
           **Docker Images:**
-          - `ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}`
+          - `ghcr.io/${{ github.repository }}:${{ steps.gitversion.outputs.semVer }}`
           - `ghcr.io/${{ github.repository }}:latest`
           
-          See the [full changelog](https://github.com/${{ github.repository }}/compare/${{ steps.version.outputs.previous-tag }}...${{ steps.version.outputs.version-tag }}) for all changes.
+          **Branch:** ${{ steps.gitversion.outputs.branchName }}
+          **Commit:** ${{ steps.gitversion.outputs.sha }}
         draft: false
         prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   docker:
     needs: [build, version]
@@ -110,7 +112,7 @@ jobs:
           type=ref,event=branch
           type=ref,event=tag
           type=raw,value=latest,enable={{is_default_branch}}
-          type=raw,value=${{ needs.version.outputs.version }},enable=${{ needs.version.outputs.version != '' }}
+          type=raw,value=${{ needs.version.outputs.semVer }},enable=${{ needs.version.outputs.semVer != '' }}
           type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
           
     - name: Build and push Docker image
