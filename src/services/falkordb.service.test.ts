@@ -67,7 +67,8 @@ describe('FalkorDB Service', () => {
       
       // Assert
       expect(mockFalkorDB.mockSelectGraph).toHaveBeenCalledWith(graphName);
-      expect(mockFalkorDB.mockQuery).toHaveBeenCalledWith(query, params);
+      // With the parameter substitution workaround, parameters are substituted into the query
+      expect(mockFalkorDB.mockQuery).toHaveBeenCalledWith('MATCH (n) RETURN n');
       expect(result).toEqual(expectedResult);
     });
     
