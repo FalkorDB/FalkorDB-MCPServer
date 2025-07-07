@@ -7,7 +7,7 @@ on:
     branches: [ main, master ]
 
 jobs:
-  build:
+  unit-tests:
     runs-on: ubuntu-latest
 
     strategy:
@@ -32,10 +32,85 @@ jobs:
     - name: Lint
       run: npm run lint --if-present
       
-    - name: Test
-      run: npm test --if-present
+    - name: Run unit tests
+      run: npm run test:unit
       env:
         CI: true
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]  # Run integration tests on fewer versions for speed
+
+    services:
+      falkordb:
+        image: falkordb/falkordb:latest
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli -p 6379 ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --health-start-period 10s
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build
+      run: npm run build --if-present
+      
+    - name: Wait for FalkorDB
+      run: |
+        timeout 30 bash -c 'until redis-cli -h localhost -p 6380 ping; do sleep 1; done'
+        echo "FalkorDB is ready"
+      
+    - name: Run integration tests
+      run: npm run test:integration
+      env:
+        CI: true
+        FALKORDB_HOST: localhost
+        FALKORDB_PORT: 6380
+        FALKORDB_USERNAME: ""
+        FALKORDB_PASSWORD: ""
+        MCP_API_KEY: test-api-key
+        NODE_ENV: test
+
+  build:
+    needs: [unit-tests, integration-tests]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20.x
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build
+      run: npm run build
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifacts
+        path: dist/
         
   docker:
     needs: build
@@ -44,6 +119,12 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: build-artifacts
+        path: dist/
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
