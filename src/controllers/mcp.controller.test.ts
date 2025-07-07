@@ -91,7 +91,8 @@ describe('MCP Controller', () => {
       expect(falkorDBService.executeQuery).toHaveBeenCalledWith(
         'testGraph',
         'MATCH (n) RETURN n',
-        { param1: 'value1' }
+        { param1: 'value1' },
+        undefined
       );
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({
@@ -116,7 +117,7 @@ describe('MCP Controller', () => {
       );
 
       // Assert
-      expect(falkorDBService.listGraphs).toHaveBeenCalled();
+      expect(falkorDBService.listGraphs).toHaveBeenCalledWith(undefined);
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.arrayContaining([

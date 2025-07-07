@@ -30,13 +30,17 @@ class FalkorDBService {
     }
   }
 
-  async executeQuery(graphName: string, query: string, params?: Record<string, any>): Promise<any> {
+  async executeQuery(graphName: string, query: string, params?: Record<string, any>, tenantId?: string): Promise<any> {
     if (!this.client) {
       throw new Error('FalkorDB client not initialized');
     }
     
     try {
-      const graph = this.client.selectGraph(graphName);
+      // Import here to avoid circular dependency
+      const { TenantGraphService } = await import('./tenant-graph.service');
+      const resolvedGraphName = TenantGraphService.resolveGraphName(graphName, tenantId);
+      
+      const graph = this.client.selectGraph(resolvedGraphName);
       const result = await graph.query(query, params);
       return result;
     } catch (error) {
@@ -48,16 +52,23 @@ class FalkorDBService {
 
   /**
    * Lists all available graphs in FalkorDB
-   * @returns Array of graph names
+   * @param tenantId - Optional tenant identifier for filtering
+   * @returns Array of graph names (filtered for tenant if provided)
    */
-  async listGraphs(): Promise<string[]> {
+  async listGraphs(tenantId?: string): Promise<string[]> {
     if (!this.client) {
       throw new Error('FalkorDB client not initialized');
     }
 
     try {
-      // Using the simplified list method which always returns an array
-      return await this.client.list();
+      // Get all graphs from FalkorDB
+      const allGraphs = await this.client.list();
+      
+      // Import here to avoid circular dependency
+      const { TenantGraphService } = await import('./tenant-graph.service');
+      
+      // Filter graphs based on tenant context
+      return TenantGraphService.filterGraphsForTenant(allGraphs, tenantId);
     } catch (error) {
       console.error('Error listing FalkorDB graphs:', error);
       throw error;

@@ -1,10 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 import { config } from '../config';
+import { oauth2Middleware, TenantRequest } from './oauth2.middleware';
 
 /**
  * Middleware to authenticate MCP API requests
+ * Supports both API key and OAuth2 JWT authentication based on configuration
  */
-export const authenticateMCP = (req: Request, res: Response, next: NextFunction): Response<any, Record<string, any>> | void => {
+export const authenticateMCP = async (req: TenantRequest, res: Response, next: NextFunction): Promise<Response<any, Record<string, any>> | void> => {
+  // Multi-tenancy with OAuth2 JWT
+  if (config.multiTenancy.enabled && config.multiTenancy.authMode === 'oauth2') {
+    return await oauth2Middleware.validateJWT(req, res, next);
+  }
+  
+  // Standard API key authentication (default behavior)
   const apiKey = req.headers['x-api-key'] || req.query.apiKey;
   
   // Skip authentication for development environment

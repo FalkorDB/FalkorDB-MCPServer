@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { falkorDBService } from '../services/falkordb.service';
+import { TenantRequest } from '../middleware/oauth2.middleware';
 
 import { 
   MCPContextRequest, 
@@ -11,7 +12,7 @@ export class MCPController {
   /**
    * Process MCP context requests
    */
-  async processContextRequest(req: Request, res: Response): Promise<Response<any, Record<string, any>>> {
+  async processContextRequest(req: TenantRequest, res: Response): Promise<Response<any, Record<string, any>>> {
     try {
       const contextRequest: MCPContextRequest = req.body;
       
@@ -26,11 +27,12 @@ export class MCPController {
       
       const startTime = Date.now();
       
-      // Execute the query on FalkorDB
+      // Execute the query on FalkorDB with tenant context
       const result = await falkorDBService.executeQuery(
         contextRequest.graphName,
         contextRequest.query, 
-        contextRequest.params
+        contextRequest.params,
+        req.tenantId
       );
       
       const queryTime = Date.now() - startTime;
@@ -42,7 +44,8 @@ export class MCPController {
           timestamp: new Date().toISOString(),
           queryTime,
           provider: 'FalkorDB MCP Server',
-          source: 'falkordb'
+          source: 'falkordb',
+          tenantId: req.tenantId
         }
       };
       
@@ -52,7 +55,8 @@ export class MCPController {
       return res.status(500).json({ 
         error: error.message,
         metadata: {
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          tenantId: req.tenantId
         }
       });
     }
@@ -87,9 +91,9 @@ export class MCPController {
   /**
    * List available graphs in FalkorDB
    */
-  async listGraphs(req: Request, res: Response): Promise<Response<any, Record<string, any>>>  {
+  async listGraphs(req: TenantRequest, res: Response): Promise<Response<any, Record<string, any>>>  {
     try {
-      const graphNames = await falkorDBService.listGraphs();
+      const graphNames = await falkorDBService.listGraphs(req.tenantId);
       
       // Format the graph list into a more structured response
       const graphs = graphNames.map(name => ({
@@ -103,7 +107,8 @@ export class MCPController {
         data: graphs,
         metadata: {
           timestamp: new Date().toISOString(),
-          count: graphs.length
+          count: graphs.length,
+          tenantId: req.tenantId
         }
       });
     } catch (error: any) {
