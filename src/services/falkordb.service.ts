@@ -3,9 +3,18 @@ import { config } from '../config';
 
 class FalkorDBService {
   private client: FalkorDB | null = null;
+  private initPromise: Promise<void> | null = null;
 
   constructor() {
-    this.init();
+    // Don't initialize immediately in constructor
+    // Initialize lazily when first method is called
+  }
+
+  private ensureInitialized(): Promise<void> {
+    if (!this.initPromise) {
+      this.initPromise = this.init();
+    }
+    return this.initPromise;
   }
 
   private async init() {
@@ -73,6 +82,7 @@ class FalkorDBService {
   }
 
   async executeQuery(graphName: string, query: string, params?: Record<string, any>, tenantId?: string): Promise<any> {
+    await this.ensureInitialized();
     if (!this.client) {
       throw new Error('FalkorDB client not initialized');
     }
@@ -102,6 +112,7 @@ class FalkorDBService {
    * @returns Array of graph names (filtered for tenant if provided)
    */
   async listGraphs(tenantId?: string): Promise<string[]> {
+    await this.ensureInitialized();
     if (!this.client) {
       throw new Error('FalkorDB client not initialized');
     }
