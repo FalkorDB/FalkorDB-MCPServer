@@ -22,7 +22,7 @@ class FalkorDBService {
       // Test connection
       const connection = await this.client.connection;
       await connection.ping();
-      console.log('Successfully connected to FalkorDB');
+      console.error('Successfully connected to FalkorDB');
     } catch (error) {
       console.error('Failed to connect to FalkorDB:', error);
       // Retry connection after a delay
