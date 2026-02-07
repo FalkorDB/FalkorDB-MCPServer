@@ -66,15 +66,41 @@ npm start
 
 ## API Endpoints
 
+### REST API Endpoints
+
 * `GET /api/mcp/metadata`: Get metadata about the FalkorDB instance and available capabilities
 * `POST /api/mcp/context`: Execute queries against FalkorDB
 * `GET /api/mcp/health`: Check server health
 * `GET /api/mcp/graphs`: Returns the list of Graphs
-* 
+
+### MCP Protocol Endpoints (SSE Transport)
+
+* `GET /api/sse`: Server-Sent Events endpoint for MCP protocol connections. This endpoint establishes a persistent SSE connection and returns the message endpoint URL with a unique session ID.
+* `POST /api/messages?sessionId={sessionId}`: Message endpoint for MCP protocol communication. The `sessionId` query parameter is required and must match an active SSE session. Clients should use the message URL provided by the SSE handshake rather than constructing this URL manually.
 
 ## MCP Configuration
 
-To use this server with MCP clients, you can add it to your MCP configuration:
+### Using SSE Transport (Recommended for Remote Servers)
+
+For MCP clients that support HTTP/SSE transport (like Cline), configure as follows:
+
+```json
+{
+  "mcpServers": {
+    "falkordb": {
+      "disabled": false,
+      "autoApprove": [],
+      "timeout": 60,
+      "url": "http://localhost:3000/api/sse",
+      "transportType": "http"
+    }
+  }
+}
+```
+
+### Using Docker with stdio Transport
+
+To use this server with MCP clients via stdio:
 
 ```json
 {
@@ -95,7 +121,9 @@ To use this server with MCP clients, you can add it to your MCP configuration:
 }
 ```
 
-For client-side configuration:
+### REST API Configuration
+
+For client-side REST API configuration:
 
 ```json
 {

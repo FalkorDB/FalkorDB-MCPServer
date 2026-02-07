@@ -1,6 +1,7 @@
 import express from 'express';
 import { config } from './config';
 import { mcpRoutes } from './routes/mcp.routes';
+import { sseRoutes } from './routes/sse.routes';
 import { authenticateMCP } from './middleware/auth.middleware';
 import { falkorDBService } from './services/falkordb.service';
 
@@ -13,6 +14,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Apply authentication to MCP routes
 app.use('/api/mcp', authenticateMCP, mcpRoutes);
+
+// SSE routes for MCP protocol (no authentication for SSE transport)
+app.use('/api', sseRoutes);
 
 // Basic routes
 app.get('/', (req, res) => {
