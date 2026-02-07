@@ -40,7 +40,6 @@
     "@modelcontextprotocol/sdk": "^1.8.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "falkordb": "^6.2.07",
-    "uuid": "^13.0.0"
+    "falkordb": "^6.2.07"
   }
 }

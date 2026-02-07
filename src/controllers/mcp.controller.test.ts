@@ -76,7 +76,7 @@ describe('MCP Controller', () => {
 
     test('should execute query and return results', async () => {
       // Arrange
-      const mockQueryResult = { records: [{ id: 1, name: 'test' }] };
+      const mockQueryResult = { data: [{ id: 1, name: 'test' }], metadata: {} };
       (falkorDBService.executeQuery as jest.Mock).mockResolvedValue(mockQueryResult);
       
       mockRequest = {
@@ -260,7 +260,7 @@ describe('MCP Controller', () => {
       });
 
       test('graph_query success', async () => {
-        (falkorDBService.executeQuery as jest.Mock).mockResolvedValue([{ id: 1 }]);
+        (falkorDBService.executeQuery as jest.Mock).mockResolvedValue({ data: [{ id: 1 }] });
         mockRequest = {
           body: {
             method: 'tools/call',
@@ -295,10 +295,10 @@ describe('MCP Controller', () => {
 
       test('get_graph_schema success', async () => {
         (falkorDBService.executeQuery as jest.Mock).mockImplementation((graph, query) => {
-          if (query.includes('labels')) return Promise.resolve([{ label: 'Person' }]);
-          if (query.includes('relationshipTypes')) return Promise.resolve([{ relationshipType: 'KNOWS' }]);
-          if (query.includes('MATCH')) return Promise.resolve([]);
-          return Promise.resolve([]);
+          if (query.includes('labels')) return Promise.resolve({ data: [{ label: 'Person' }] });
+          if (query.includes('relationshipTypes')) return Promise.resolve({ data: [{ relationshipType: 'KNOWS' }] });
+          if (query.includes('MATCH')) return Promise.resolve({ data: [] });
+          return Promise.resolve({ data: [] });
         });
 
         mockRequest = {
@@ -316,7 +316,7 @@ describe('MCP Controller', () => {
       });
 
       test('get_node_properties success', async () => {
-        (falkorDBService.executeQuery as jest.Mock).mockResolvedValue([{ props: {} }]);
+        (falkorDBService.executeQuery as jest.Mock).mockResolvedValue({ data: [{ props: {} }] });
         mockRequest = {
           body: {
             method: 'tools/call',
@@ -332,7 +332,7 @@ describe('MCP Controller', () => {
       });
 
       test('get_relationship_properties success', async () => {
-        (falkorDBService.executeQuery as jest.Mock).mockResolvedValue([{ props: {} }]);
+        (falkorDBService.executeQuery as jest.Mock).mockResolvedValue({ data: [{ props: {} }] });
         mockRequest = {
           body: {
             method: 'tools/call',
