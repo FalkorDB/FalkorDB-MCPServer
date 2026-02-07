@@ -181,7 +181,18 @@ export class MCPController {
     }
 
     if (method === 'tools/call') {
-        const { name, arguments: args } = req.body.params;
+        const params = req.body.params;
+        if (!params || !params.name) {
+            return res.status(200).json({
+                jsonrpc: '2.0',
+                id,
+                error: {
+                    code: -32602,
+                    message: 'Invalid params: name is required'
+                }
+            });
+        }
+        const { name, arguments: args } = params;
 
         if (name === 'graph_query') {
             try {
