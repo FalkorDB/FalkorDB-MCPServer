@@ -4,8 +4,8 @@ import { createMCPServer } from '../services/mcp.server';
 
 const router = Router();
 
-// Store active SSE transports by session ID
-const transports: { [sessionId: string]: SSEServerTransport } = {};
+// Store active SSE transports by session ID using Map
+const transports = new Map<string, SSEServerTransport>();
 
 /**
  * SSE endpoint for MCP connections
@@ -13,16 +13,20 @@ const transports: { [sessionId: string]: SSEServerTransport } = {};
  */
 router.get('/sse', async (req: Request, res: Response) => {
   try {
+    // Derive the message endpoint from the request to handle different base paths
+    const baseUrl = (req.baseUrl || '').replace(/\/$/, '');
+    const messagesEndpoint = `${baseUrl}/messages`;
+
     // Create a new SSE transport
-    const transport = new SSEServerTransport('/api/messages', res);
+    const transport = new SSEServerTransport(messagesEndpoint, res);
     const sessionId = transport.sessionId;
 
     // Store the transport
-    transports[sessionId] = transport;
+    transports.set(sessionId, transport);
 
     // Clean up when the connection closes
     res.on('close', () => {
-      delete transports[sessionId];
+      transports.delete(sessionId);
       console.log(`SSE connection closed for session: ${sessionId}`);
     });
 
@@ -47,13 +51,21 @@ router.get('/sse', async (req: Request, res: Response) => {
  */
 router.post('/messages', async (req: Request, res: Response) => {
   try {
-    const sessionId = req.query.sessionId as string;
+    const rawSessionId = req.query.sessionId;
+    let sessionId: string | undefined;
+
+    // Validate and extract sessionId from query parameter
+    if (Array.isArray(rawSessionId)) {
+      sessionId = rawSessionId[0] as string;
+    } else if (typeof rawSessionId === 'string') {
+      sessionId = rawSessionId;
+    }
 
     if (!sessionId) {
       return res.status(400).json({ error: 'sessionId query parameter is required' });
     }
 
-    const transport = transports[sessionId];
+    const transport = transports.get(sessionId);
 
     if (!transport) {
       return res.status(404).json({ error: 'No active session found for the provided sessionId' });

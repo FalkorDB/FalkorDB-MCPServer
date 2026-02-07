@@ -75,8 +75,8 @@ npm start
 
 ### MCP Protocol Endpoints (SSE Transport)
 
-* `GET /api/sse`: Server-Sent Events endpoint for MCP protocol connections
-* `POST /api/messages`: Message endpoint for MCP protocol communication
+* `GET /api/sse`: Server-Sent Events endpoint for MCP protocol connections. This endpoint establishes a persistent SSE connection and returns the message endpoint URL with a unique session ID.
+* `POST /api/messages?sessionId={sessionId}`: Message endpoint for MCP protocol communication. The `sessionId` query parameter is required and must match an active SSE session. Clients should use the message URL provided by the SSE handshake rather than constructing this URL manually.
 
 ## MCP Configuration
 
