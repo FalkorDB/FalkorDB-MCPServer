@@ -72,7 +72,7 @@ describe('FalkorDB Service', () => {
     // Reset service state
     (falkorDBService as any).client = null;
     (falkorDBService as any).retryCount = 0;
-    (falkorDBService as any).isInitializing = false;
+    (falkorDBService as any).initializingPromise = null;
   });
 
   describe('initialize', () => {
@@ -102,18 +102,29 @@ describe('FalkorDB Service', () => {
       expect(mockFalkorDB.mockPing).toHaveBeenCalled();
       expect((falkorDBService as any).client).not.toBeNull();
       expect((falkorDBService as any).retryCount).toBe(0);
-      expect((falkorDBService as any).isInitializing).toBe(false);
+      expect((falkorDBService as any).initializingPromise).toBeNull();
     });
 
-    it('should not initialize if already initializing', async () => {
+    it('should await ongoing initialization if already initializing', async () => {
       // Arrange
-      (falkorDBService as any).isInitializing = true;
+      mockFalkorDB.FalkorDB.connect.mockResolvedValue({
+        connection: Promise.resolve({
+          ping: mockFalkorDB.mockPing.mockResolvedValue('PONG')
+        }),
+        selectGraph: mockFalkorDB.mockSelectGraph,
+        list: mockFalkorDB.mockList,
+        close: mockFalkorDB.mockClose
+      });
 
-      // Act
-      await falkorDBService.initialize();
+      // Act - start two initializations concurrently
+      const init1 = falkorDBService.initialize();
+      const init2 = falkorDBService.initialize();
 
-      // Assert
-      expect(mockFalkorDB.FalkorDB.connect).not.toHaveBeenCalled();
+      await Promise.all([init1, init2]);
+
+      // Assert - connect should only be called once
+      expect(mockFalkorDB.FalkorDB.connect).toHaveBeenCalledTimes(1);
+      expect((falkorDBService as any).client).not.toBeNull();
     });
 
     it('should retry connection on failure and eventually succeed', async () => {

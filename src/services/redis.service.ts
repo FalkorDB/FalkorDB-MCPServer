@@ -7,19 +7,27 @@ class RedisService {
   private client: ReturnType<typeof createClient> | null = null;
   private readonly maxRetries = 5;
   private retryCount = 0;
-  private isInitializing = false;
+  private initializingPromise: Promise<void> | null = null;
 
   constructor() {
     // Don't initialize in constructor - use explicit initialization
   }
 
   async initialize(): Promise<void> {
-    if (this.isInitializing) {
-      return;
+    if (this.initializingPromise) {
+      return this.initializingPromise;
     }
-    
-    this.isInitializing = true;
-    
+
+    this.initializingPromise = this._initialize();
+
+    try {
+      await this.initializingPromise;
+    } finally {
+      this.initializingPromise = null;
+    }
+  }
+
+  private async _initialize(): Promise<void> {
     try {
       logger.info('Attempting to connect to Redis', {
         url: config.redis.url,
@@ -34,12 +42,10 @@ class RedisService {
 
       await this.client.connect();
       await this.client.ping();
-      
+
       logger.info('Successfully connected to Redis');
       this.retryCount = 0;
-      this.isInitializing = false;
     } catch (error) {
-      this.isInitializing = false;
       
       if (this.retryCount < this.maxRetries) {
         this.retryCount++;
@@ -48,9 +54,9 @@ class RedisService {
           maxRetries: this.maxRetries,
           error: error instanceof Error ? error.message : String(error)
         });
-        
+
         await new Promise(resolve => setTimeout(resolve, 5000));
-        return this.initialize();
+        return this._initialize();
       } else {
         const appError = new AppError(
           CommonErrors.CONNECTION_FAILED,
@@ -145,14 +151,25 @@ class RedisService {
         true
       );
     }
-    
+
     try {
-      const result = await this.client.scan(0, {
-        MATCH: '*',
-        COUNT: 1000
-      });
-      logger.debug('Redis KEYS operation completed', { count: result.keys.length });
-      return result.keys;
+      let cursor = 0;
+      const allKeys: string[] = [];
+
+      do {
+        const result = await this.client.scan(cursor, {
+          MATCH: '*',
+          COUNT: 1000
+        });
+
+        allKeys.push(...result.keys);
+
+        // Depending on the redis client, cursor may be a string; normalize to number
+        cursor = typeof result.cursor === 'string' ? Number(result.cursor) : result.cursor;
+      } while (cursor !== 0);
+
+      logger.debug('Redis KEYS operation completed', { count: allKeys.length });
+      return allKeys;
     } catch (error) {
       const appError = new AppError(
         CommonErrors.OPERATION_FAILED,
