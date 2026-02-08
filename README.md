@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/falkordb-falkordb-mcpserver-badge.png)](https://mseep.ai/app/falkordb-falkordb-mcpserver)
+
 # FalkorDB MCP Server
 
 A Model Context Protocol (MCP) server for FalkorDB, allowing AI models to query and interact with graph databases.
