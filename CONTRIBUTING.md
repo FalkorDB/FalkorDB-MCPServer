@@ -6,7 +6,7 @@ Thank you for your interest in contributing to the FalkorDB MCP Server! We welco
 
 ### Prerequisites
 
-- Node.js 16+ 
+- Node.js 18+ 
 - npm 8+
 - FalkorDB instance for testing
 - Git
