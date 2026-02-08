@@ -62,6 +62,11 @@ export class Logger {
   }
 
   private writeLog(level: LogLevel, message: string, context?: LogContext): void {
+    // Guard against file logging when disabled
+    if (!this.logFile) {
+      return;
+    }
+
     try {
       // Always write to file for persistence
       const logLine = this.formatLog(level, message, context);

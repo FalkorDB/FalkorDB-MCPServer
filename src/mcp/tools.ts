@@ -11,7 +11,7 @@ function registerQueryGraphTool(server: McpServer): void {
     "query_graph",
     {
       title: "Query Graph",
-      description: "Run a OpenCypher query on a graph. Supports both read-write and read-only queries.",
+      description: "Run an OpenCypher query on a graph. Supports both read-write and read-only queries.",
       inputSchema: {
         graphName: z.string().describe("The name of the graph to query"),
         query: z.string().describe("The OpenCypher query to run"),
@@ -227,11 +227,11 @@ function registerSetKeyTool(server: McpServer): void {
         
         await redisService.set(key, value);
         await logger.debug('Set key tool executed successfully', { key });
-        
+
         return {
           content: [{
             type: "text",
-            text: `Key ${key} set to ${value}`
+            text: `Key ${key} set successfully`
           }]
         };
       } catch (error) {

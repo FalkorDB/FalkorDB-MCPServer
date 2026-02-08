@@ -1,26 +1,37 @@
 import { FalkorDB } from 'falkordb';
 import { config } from '../config/index.js';
-import { GraphReply } from 'falkordb/dist/src/graph.js';
 import { AppError, CommonErrors } from '../errors/AppError.js';
 import { logger } from './logger.service.js';
+
+// Local type alias to avoid importing internal types from 'falkordb/dist/src/...'
+// This provides better compatibility across falkordb versions
+type GraphReply = unknown;
 
 class FalkorDBService {
   private client: FalkorDB | null = null;
   private readonly maxRetries = 5;
   private retryCount = 0;
-  private isInitializing = false;
+  private initializingPromise: Promise<void> | null = null;
 
   constructor() {
     // Don't initialize in constructor - use explicit initialization
   }
 
   async initialize(): Promise<void> {
-    if (this.isInitializing) {
-      return;
+    if (this.initializingPromise) {
+      return this.initializingPromise;
     }
-    
-    this.isInitializing = true;
-    
+
+    this.initializingPromise = this._initialize();
+
+    try {
+      await this.initializingPromise;
+    } finally {
+      this.initializingPromise = null;
+    }
+  }
+
+  private async _initialize(): Promise<void> {
     try {
       logger.info('Attempting to connect to FalkorDB', {
         host: config.falkorDB.host,
@@ -36,16 +47,14 @@ class FalkorDBService {
         password: config.falkorDB.password,
         username: config.falkorDB.username,
       });
-      
+
       // Test connection
       const connection = await this.client.connection;
       await connection.ping();
-      
+
       logger.info('Successfully connected to FalkorDB');
       this.retryCount = 0;
-      this.isInitializing = false;
     } catch (error) {
-      this.isInitializing = false;
       
       if (this.retryCount < this.maxRetries) {
         this.retryCount++;
@@ -54,9 +63,9 @@ class FalkorDBService {
           maxRetries: this.maxRetries,
           error: error instanceof Error ? error.message : String(error)
         });
-        
+
         await new Promise(resolve => setTimeout(resolve, 5000));
-        return this.initialize();
+        return this._initialize();
       } else {
         const appError = new AppError(
           CommonErrors.CONNECTION_FAILED,
@@ -70,7 +79,7 @@ class FalkorDBService {
     }
   }
 
-  async executeQuery(graphName: string, query: string, params?: Record<string, any>, readOnly: boolean = false): Promise<GraphReply<any>> {
+  async executeQuery(graphName: string, query: string, params?: Record<string, any>, readOnly: boolean = false): Promise<GraphReply> {
     if (!this.client) {
       throw new AppError(
         CommonErrors.CONNECTION_FAILED,
@@ -113,7 +122,7 @@ class FalkorDBService {
    * @param params - Optional query parameters
    * @returns Query result
    */
-  async executeReadOnlyQuery(graphName: string, query: string, params?: Record<string, any>): Promise<GraphReply<any>> {
+  async executeReadOnlyQuery(graphName: string, query: string, params?: Record<string, any>): Promise<GraphReply> {
     return this.executeQuery(graphName, query, params, true);
   }
 

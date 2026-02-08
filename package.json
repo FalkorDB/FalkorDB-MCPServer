@@ -88,14 +88,6 @@
     "redis": "^4.0.0",
     "zod": "^3.23.0"
   },
-  "peerDependencies": {
-    "redis": "^4.0.0"
-  },
-  "peerDependenciesMeta": {
-    "redis": {
-      "optional": true
-    }
-  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
