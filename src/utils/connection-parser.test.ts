@@ -232,18 +232,20 @@ describe('Connection Parser Utility', () => {
         throw new Error('Parsing error');
       });
 
-      // Act
-      const result = parseFalkorDBConnectionString('falkordb://host:port');
-      
-      // Assert
-      expect(result).toEqual({
-        host: 'localhost',
-        port: 6379
-      });
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Error parsing connection string:', expect.any(Error));
-      
-      // Cleanup
-      global.parseInt = originalParseInt;
+      try {
+        // Act
+        const result = parseFalkorDBConnectionString('falkordb://host:port');
+        
+        // Assert
+        expect(result).toEqual({
+          host: 'localhost',
+          port: 6379
+        });
+        expect(consoleErrorSpy).toHaveBeenCalledWith('Error parsing connection string:', expect.any(Error));
+      } finally {
+        // Cleanup
+        global.parseInt = originalParseInt;
+      }
     });
 
     it('should handle edge case with multiple @ symbols', () => {
