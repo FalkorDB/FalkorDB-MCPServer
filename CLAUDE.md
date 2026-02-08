@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Production start**: `npm start` - Runs the built application from `dist/index.js`
 - **Lint**: `npm run lint` - Runs ESLint on TypeScript files
 - **Test**: `npm test` - Runs Jest test suite
-- **Test with coverage**: `npm test:coverage` - Runs tests with coverage report
+- **Test with coverage**: `npm run test:coverage` - Runs tests with coverage report
 
 ## Project Architecture
 
