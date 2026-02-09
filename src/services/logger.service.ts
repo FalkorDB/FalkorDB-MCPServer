@@ -85,12 +85,15 @@ export class Logger {
     try {
       // Format log data for MCP client
       const logData = context ? `${message} | ${JSON.stringify(context)}` : message;
-      
+
+      // Map WARN to warning for MCP spec compliance
+      const mcpLevel = level === 'WARN' ? 'warning' : level.toLowerCase();
+
       // Send notification to MCP client
       await this.mcpServer.server.notification({
         method: 'notifications/message',
         params: {
-          level: level.toLowerCase(),
+          level: mcpLevel,
           data: logData,
           logger: 'falkordb-mcp'
         }

@@ -108,8 +108,10 @@ class FalkorDBService {
         `Failed to execute ${readOnly ? 'read-only ' : ''}query on graph '${graphName}': ${error instanceof Error ? error.message : String(error)}`,
         true
       );
-      
-      logger.error('Query execution failed', appError, { graphName, query, readOnly });
+
+      // Sanitize query for error logging using same truncation as debug logs
+      const safeQuery = query.substring(0, 100) + (query.length > 100 ? '...' : '');
+      logger.error('Query execution failed', appError, { graphName, query: safeQuery, readOnly });
       throw appError;
     }
   }

@@ -46,7 +46,16 @@ class RedisService {
       logger.info('Successfully connected to Redis');
       this.retryCount = 0;
     } catch (error) {
-      
+      // Clean up failed client before retrying or throwing
+      if (this.client) {
+        try {
+          await this.client.disconnect();
+        } catch {
+          // Ignore disconnect errors
+        }
+        this.client = null;
+      }
+
       if (this.retryCount < this.maxRetries) {
         this.retryCount++;
         logger.warn('Failed to connect to Redis, retrying...', {
@@ -63,7 +72,7 @@ class RedisService {
           `Failed to connect to Redis after ${this.maxRetries} attempts: ${error instanceof Error ? error.message : String(error)}`,
           true
         );
-        
+
         logger.error('Redis connection failed permanently', appError);
         throw appError;
       }

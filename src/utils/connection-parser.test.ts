@@ -251,26 +251,26 @@ describe('Connection Parser Utility', () => {
     it('should handle edge case with multiple @ symbols', () => {
       // Act
       const result = parseFalkorDBConnectionString('falkordb://user@domain:pass@host:1234');
-      
-      // Assert - implementation takes first @ as auth separator, but subsequent @ affects parsing
+
+      // Assert - after fixing parser to use lastIndexOf('@')
       expect(result).toEqual({
-        host: 'domain',
-        port: 6379,
-        username: undefined,
-        password: 'user'
+        host: 'host',
+        port: 1234,
+        username: 'user@domain',
+        password: 'pass'
       });
     });
 
     it('should handle edge case with multiple : in auth', () => {
       // Act
       const result = parseFalkorDBConnectionString('falkordb://user:pass:extra@host:1234');
-      
-      // Assert - implementation takes first : as separator between user and pass
+
+      // Assert - after fixing parser to properly rejoin password with multiple ':'
       expect(result).toEqual({
         host: 'host',
         port: 1234,
         username: 'user',
-        password: 'pass'
+        password: 'pass:extra'
       });
     });
   });
