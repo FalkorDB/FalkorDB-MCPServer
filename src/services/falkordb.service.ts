@@ -22,6 +22,7 @@ class FalkorDBService {
       return this.initializingPromise;
     }
 
+    this.retryCount = 0;
     this.initializingPromise = this._initialize();
 
     try {
