@@ -55,6 +55,15 @@ class FalkorDBService {
       logger.info('Successfully connected to FalkorDB');
       this.retryCount = 0;
     } catch (error) {
+      // Clean up any partially connected client before retrying or throwing
+      if (this.client) {
+        try {
+          await this.client.close();
+        } catch {
+          // Ignore cleanup errors
+        }
+        this.client = null;
+      }
       
       if (this.retryCount < this.maxRetries) {
         this.retryCount++;
