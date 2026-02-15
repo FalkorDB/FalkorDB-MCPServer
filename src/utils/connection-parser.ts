@@ -23,32 +23,32 @@ interface FalkorDBConnectionOptions {
         host: 'localhost',
         port: 6379
       };
-      
+
       // Handle empty or undefined input
       if (!connectionString) {
         return defaultOptions;
       }
-      
+
       // Remove protocol prefix if present
       let cleanString = connectionString;
       if (cleanString.startsWith('falkordb://')) {
         cleanString = cleanString.substring('falkordb://'.length);
       }
-      
-      // Parse authentication if present
+
+      // Parse authentication if present - use lastIndexOf to handle '@' in password
       let auth = '';
       let hostPort = cleanString;
-      
-      if (cleanString.includes('@')) {
-        const parts = cleanString.split('@');
-        auth = parts[0];
-        hostPort = parts[1];
+
+      const lastAtIndex = cleanString.lastIndexOf('@');
+      if (lastAtIndex !== -1) {
+        auth = cleanString.slice(0, lastAtIndex);
+        hostPort = cleanString.slice(lastAtIndex + 1);
       }
-      
+
       // Parse host and port
       let host = 'localhost';
       let port = 6379;
-      
+
       if (hostPort.includes(':')) {
         const parts = hostPort.split(':');
         host = parts[0] || 'localhost';
@@ -56,19 +56,19 @@ interface FalkorDBConnectionOptions {
       } else {
         host = hostPort || 'localhost';
       }
-      
-      // Parse username and password
+
+      // Parse username and password - handle multiple ':' in password
       let username = undefined;
       let password = undefined;
-      
+
       if (auth && auth.includes(':')) {
-        const parts = auth.split(':');
-        username = parts[0] || undefined;
-        password = parts[1] || undefined;
+        const firstColonIndex = auth.indexOf(':');
+        username = auth.slice(0, firstColonIndex) || undefined;
+        password = auth.slice(firstColonIndex + 1) || undefined;
       } else if (auth) {
         password = auth;
       }
-      
+
       return {
         host,
         port,

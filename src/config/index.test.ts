@@ -13,6 +13,8 @@ describe('Config', () => {
     expect(config.falkorDB).toHaveProperty('port');
     expect(config.falkorDB).toHaveProperty('username');
     expect(config.falkorDB).toHaveProperty('password');
+    expect(config.falkorDB).toHaveProperty('defaultReadOnly');
+    expect(typeof config.falkorDB.defaultReadOnly).toBe('boolean');
   });
 
   test('should have MCP configuration', () => {

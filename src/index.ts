@@ -1,48 +1,105 @@
-import express from 'express';
-import { config } from './config';
-import { mcpRoutes } from './routes/mcp.routes';
-import { authenticateMCP } from './middleware/auth.middleware';
-import { falkorDBService } from './services/falkordb.service';
+#!/usr/bin/env node
 
-// Initialize Express app
-const app = express();
+import { falkorDBService } from './services/falkordb.service.js';
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { redisService } from './services/redis.service.js';
+import { errorHandler } from './errors/ErrorHandler.js';
+import { logger } from './services/logger.service.js';
+import registerAllTools from './mcp/tools.js';
+import registerAllResources from './mcp/resources.js';
+import registerAllPrompts from './mcp/prompts.js';
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Apply authentication to MCP routes
-app.use('/api/mcp', authenticateMCP, mcpRoutes);
-
-// Basic routes
-app.get('/', (req, res) => {
-  res.json({
-    name: 'FalkorDB MCP Server',
-    version: '1.0.0',
-    status: 'running',
-  });
+// Setup global error handlers following Node.js best practices
+process.on('uncaughtException', (error: Error) => {
+  logger.errorSync('Uncaught exception occurred', error);
+  errorHandler.handleError(error);
+  errorHandler.crashIfUntrustedError(error);
 });
 
-// Start server
-const PORT = config.server.port;
-app.listen(PORT, () => {
-  console.log(`FalkorDB MCP Server listening on port ${PORT}`);
-  console.log(`Environment: ${config.server.nodeEnv}`);
+process.on('unhandledRejection', (reason: unknown) => {
+  // Re-throw as error to be caught by uncaughtException handler
+  const error = reason instanceof Error ? reason : new Error(String(reason));
+  throw error;
 });
 
-// Handle graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  // Close database connections
-  await falkorDBService.close();
-  process.exit(0);
+// Graceful shutdown handler
+const gracefulShutdown = async (signal: string) => {
+  await logger.info(`Received ${signal}, shutting down gracefully`);
+  
+  try {
+    await falkorDBService.close();
+    await redisService.close();
+    await logger.info('All services closed successfully');
+    process.exit(0);
+  } catch (error) {
+    await logger.error('Error during graceful shutdown', error instanceof Error ? error : new Error(String(error)));
+    process.exit(1);
+  }
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Create an MCP server
+const server = new McpServer({
+  name: "falkordb-mcpserver",
+  version: "1.0.0"
+}, {
+  capabilities: {
+    tools: {
+      listChanged: true,
+    },
+    resources: {
+      listChanged: true,
+    },
+    prompts: {
+      listChanged: true,
+    },
+    logging: {},
+  }
 });
 
-process.on('SIGINT', async () => {
-  console.log('SIGINT received. Shutting down gracefully...');
-  // Close database connections
-  await falkorDBService.close();
-  process.exit(0);
-});
+// Note: Current MCP TypeScript SDK doesn't directly support elicitation in tool handlers
+// This is a conceptual implementation - you'd need to implement session access
 
-export default app;
+// Configure logger to send notifications to MCP clients
+logger.setMcpServer(server);
+
+// Register all tools and resources
+registerAllTools(server);
+registerAllResources(server);
+registerAllPrompts(server);
+
+// Initialize services before starting server
+async function initializeServices(): Promise<void> {
+  await logger.info('Initializing FalkorDB MCP server...');
+  
+  try {
+    await falkorDBService.initialize();
+    await redisService.initialize();
+    await logger.info('All services initialized successfully');
+  } catch (error) {
+    await logger.error('Failed to initialize services', error instanceof Error ? error : new Error(String(error)));
+    throw error;
+  }
+}
+
+// Main server startup
+async function startServer(): Promise<void> {
+  try {
+    await initializeServices();
+    
+    // Start receiving messages on stdin and sending messages on stdout
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    
+    await logger.info('MCP server started successfully');
+  } catch (error) {
+    await logger.error('Failed to start MCP server', error instanceof Error ? error : new Error(String(error)));
+    await gracefulShutdown('STARTUP_ERROR');
+  }
+}
+
+// Start the server
+startServer();
