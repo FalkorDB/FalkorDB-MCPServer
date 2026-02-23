@@ -17,7 +17,6 @@ FalkorDB MCP Server enables AI assistants like Claude to interact with FalkorDB 
 This server implements the [Model Context Protocol (MCP)](https://modelcontextprotocol.io), allowing AI models to:
 - **Query graph databases** using OpenCypher (with read-only mode support)
 - **Create and manage** nodes and relationships
-- **Store and retrieve** key-value data
 - **List and explore** multiple graphs
 - **Delete graphs** when needed
 - **Read-only queries** for replica instances or to prevent accidental writes
@@ -41,7 +40,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
       "command": "npx",
       "args": [
         "-y",
-        "falkordb-mcpserver@latest"
+        "@falkordb/mcpserver@latest"
       ],
       "env": {
         "FALKORDB_HOST": "localhost",
@@ -54,47 +53,41 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
-### Using Docker Compose (Recommended for Local Development)
+### Running with npx
 
-The easiest way to run FalkorDB and FalkorDB-MCPServer together is using Docker Compose:
+You can run the server directly from the command line using npx:
 
-1. Clone the repository and navigate to it:
-   ```bash
-   git clone https://github.com/FalkorDB/FalkorDB-MCPServer.git
-   cd FalkorDB-MCPServer
-   ```
+**Using inline environment variables:**
 
-2. (Optional) Create a `.env` file for custom configuration:
-   ```bash
-   cp .env.example .env
-   ```
-   Edit the `.env` file if needed.
+```bash
+# Run with stdio transport (default)
+FALKORDB_HOST=localhost FALKORDB_PORT=6379 npx -y @falkordb/mcpserver
 
-3. Start both services:
-   ```bash
-   docker compose up -d
-   ```
+# Run with HTTP transport
+MCP_TRANSPORT=http MCP_PORT=3005 FALKORDB_HOST=localhost FALKORDB_PORT=6379 npx -y @falkordb/mcpserver
+```
 
-   This will:
-   - Start a FalkorDB instance on port 6379
-   - Build and start the FalkorDB-MCPServer on port 3000
-   - Create a persistent volume for FalkorDB data
-   - Set up health checks and networking
+**Using a .env file:**
 
-4. Check the logs:
-   ```bash
-   docker compose logs -f
-   ```
+```bash
+# Using dotenv-cli to load environment variables from .env
+npx dotenv-cli -e .env -- npx @falkordb/mcpserver
+```
 
-5. Stop the services:
-   ```bash
-   docker compose down
-   ```
+This is useful for:
+- Quick testing and development
+- Running the server standalone without Claude Desktop
+- Custom integrations and scripting
 
-   To also remove the data volume:
-   ```bash
-   docker compose down -v
-   ```
+### Docker Compose
+
+Run FalkorDB and the MCP server together:
+
+```bash
+docker compose up -d
+```
+
+This starts FalkorDB with health checks and persistent volumes, plus the MCP server pre-configured to connect to it. See `docker-compose.yml` for details.
 
 ### Installation
 
@@ -114,19 +107,14 @@ The easiest way to run FalkorDB and FalkorDB-MCPServer together is using Docker 
    ```env
    # Environment Configuration
    NODE_ENV=development
-   
+
    # FalkorDB Configuration
    FALKORDB_HOST=localhost
    FALKORDB_PORT=6379
    FALKORDB_USERNAME=    # Optional
    FALKORDB_PASSWORD=    # Optional
    FALKORDB_DEFAULT_READONLY=false  # Set to 'true' for read-only mode (useful for replicas)
-   
-   # Redis Configuration (for key-value operations)
-   REDIS_URL=redis://localhost:6379
-   REDIS_USERNAME=       # Optional
-   REDIS_PASSWORD=       # Optional
-   
+
    # Logging Configuration (optional)
    ENABLE_FILE_LOGGING=false
    ```
@@ -178,7 +166,6 @@ There's also a dedicated `query_graph_readonly` tool that always executes querie
 ```text
 "Create a new person named Alice who knows Bob"
 "Add a 'WORKS_AT' relationship between Alice and TechCorp"
-"Store my API key in the database"
 ```
 
 ### 📊 Explore Structure
@@ -237,7 +224,6 @@ src/
 ├── index.ts                   # MCP server entry point
 ├── services/                  # Core business logic
 │   ├── falkordb.service.ts   # FalkorDB operations
-│   ├── redis.service.ts      # Key-value operations
 │   └── logger.service.ts     # Logging and MCP notifications
 ├── mcp/                      # MCP protocol implementations
 │   ├── tools.ts             # MCP tool definitions
@@ -321,7 +307,7 @@ docker run -p 3000:3000 \
   falkordb-mcpserver
 ```
 
-Or use with `docker-compose` alongside FalkorDB (a complete `docker-compose.yml` is included in the repository root):
+Or use with `docker-compose` alongside FalkorDB:
 
 ```yaml
 services:
@@ -343,9 +329,6 @@ services:
     depends_on:
       - falkordb
 ```
-
-> **Note:** The repository includes a complete `docker-compose.yml` file at the root with health checks, persistent volumes, and networking configured for stdio transport (default). See the "Using Docker Compose" section above for details.
-
 
 ### Using with Remote FalkorDB
 
