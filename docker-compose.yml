@@ -1,6 +1,7 @@
 services:
   falkordb:
     image: falkordb/falkordb:latest
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
@@ -12,9 +13,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
   falkordb-mcpserver:
     build: .
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
@@ -27,6 +30,7 @@ services:
       - FALKORDB_USERNAME=${FALKORDB_USERNAME:-}
       - FALKORDB_PASSWORD=${FALKORDB_PASSWORD:-}
       - FALKORDB_DEFAULT_READONLY=${FALKORDB_DEFAULT_READONLY:-false}
+      - FALKORDB_STRICT_READONLY=${FALKORDB_STRICT_READONLY:-false}
       - ENABLE_FILE_LOGGING=${ENABLE_FILE_LOGGING:-false}
     depends_on:
       falkordb:

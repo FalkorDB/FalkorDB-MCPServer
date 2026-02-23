@@ -84,8 +84,11 @@ This is useful for:
 Run FalkorDB and the MCP server together:
 
 ```bash
+cp .env.example .env   # create env file; edit to set MCP_API_KEY, FALKORDB_PASSWORD, etc.
 docker compose up -d
 ```
+
+> **Note:** Skipping the `.env` file leaves variables like `MCP_API_KEY` and `FALKORDB_PASSWORD` empty, which disables API key authentication and uses no database password.
 
 This starts FalkorDB with health checks and persistent volumes, plus the MCP server pre-configured to connect to it.
 
