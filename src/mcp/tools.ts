@@ -7,6 +7,7 @@ import { AppError, CommonErrors } from '../errors/AppError.js';
 import { config } from '../config/index.js';
 
 function registerQueryGraphTool(server: McpServer): void {
+  // @ts-expect-error TS2589 - MCP SDK registerTool type inference exceeds recursion limit
   server.registerTool(
     "query_graph",
     {
