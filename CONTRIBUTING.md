@@ -27,7 +27,7 @@ Thank you for your interest in contributing to the FalkorDB MCP Server! We welco
 3. **Set up environment:**
    ```bash
    cp .env.example .env
-   # Edit .env with your FalkorDB and Redis connection details
+   # Edit .env with your FalkorDB connection details
    ```
 
 4. **Run tests to ensure everything works:**
@@ -96,7 +96,7 @@ npm run test:coverage
 
 - Tests should be placed alongside source files with `.test.ts` extension
 - Use Jest for testing framework
-- Mock external dependencies (FalkorDB, Redis)
+- Mock external dependencies (e.g., FalkorDB)
 - Aim for high test coverage
 
 ### Test Structure
@@ -185,7 +185,6 @@ src/
 ├── index.ts              # MCP server entry point
 ├── services/             # Core business logic
 │   ├── falkordb.service.ts
-│   ├── redis.service.ts
 │   └── logger.service.ts
 ├── mcp/                  # MCP-specific implementations
 │   ├── tools.ts          # MCP tool definitions
