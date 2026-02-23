@@ -2,7 +2,7 @@
 [![Coverage](https://codecov.io/gh/falkordb/FalkorDB-MCPServer/branch/main/graph/badge.svg?token=nNxm2N0Xrl)](https://codecov.io/gh/falkordb/FalkorDB-MCPServer)
 [![License](https://img.shields.io/github/license/falkordb/FalkorDB-MCPServer.svg)](https://github.com/falkordb/FalkorDB-MCPServer/blob/main/LICENSE)
 [![Discord](https://img.shields.io/discord/1146782921294884966.svg?style=social&logo=discord)](https://discord.com/invite/99y2Ubh6tg)
-[![Twitter](https://img.shields.io/twitter/follow/falkordb?style=social)](https://twitter.com/falkordb)
+[![X (formerly Twitter)](https://img.shields.io/badge/follow-%40falkordb-1DA1F2?logo=x&style=social)](https://x.com/falkordb)
 
 # FalkorDB MCP Server
 
