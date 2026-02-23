@@ -20,21 +20,17 @@ This is a Model Context Protocol (MCP) server that enables AI models to interact
 - **Communication**: Uses stdio transport for MCP protocol (not HTTP)
 - **MCP Tools registered**:
   - `query_graph` - Execute OpenCypher queries on specific graphs
+  - `query_graph_readonly` - Execute read-only OpenCypher queries
   - `list_graphs` - List all available graphs in the database
   - `delete_graph` - Delete specific graphs
-  - `set_key`/`get_key` - Redis key-value operations for data storage
 - **MCP Resources**: `graph_list` resource provides markdown-formatted graph listings
 
 ### Core Services
-- **FalkorDB Service** (`src/services/falkordb.service.ts`): 
+- **FalkorDB Service** (`src/services/falkordb.service.ts`):
   - Singleton service managing FalkorDB connections
   - Uses `falkordb` npm package
   - Handles connection retries and pooling
-  - Main operations: `executeQuery()`, `listGraphs()`, `deleteGraph()`
-
-- **Redis Service** (`src/services/redis.service.ts`):
-  - Manages Redis operations for key-value storage
-  - Used alongside graph operations
+  - Main operations: `executeQuery()`, `executeReadOnlyQuery()`, `listGraphs()`, `deleteGraph()`
 
 ### Configuration
 - **Config system** (`src/config/index.ts`): Centralized configuration using dotenv
@@ -47,7 +43,8 @@ src/
 ├── index.ts                    # MCP server entry point with tool/resource registration
 ├── services/
 │   ├── falkordb.service.ts     # FalkorDB connection and graph operations
-│   └── redis.service.ts        # Redis key-value operations
+│   ├── redis.service.ts        # Redis service (retained for internal use only)
+│   └── logger.service.ts       # Logging and MCP notifications
 ├── config/
 │   └── index.ts                # Centralized configuration using dotenv
 ├── models/                     # TypeScript type definitions
@@ -89,7 +86,7 @@ Required environment variables in `.env`:
 - `FALKORDB_PORT` - FalkorDB port (default: 6379)
 - `FALKORDB_USERNAME` - Optional authentication
 - `FALKORDB_PASSWORD` - Optional authentication
-- `REDIS_URL` - Redis connection for key-value operations
+- `FALKORDB_DEFAULT_READONLY` - Set to 'true' for read-only mode (default: false)
 
 ## Development Notes
 - Uses ES modules (`"type": "module"` in package.json)
@@ -97,4 +94,4 @@ Required environment variables in `.env`:
 - Nodemon watches `src/**/*.ts` for development hot-reload
 - **Important**: This is an MCP server, not a web server - it communicates via stdio transport
 - Build output in `dist/` directory is executed by MCP clients
-- The server automatically closes FalkorDB and Redis connections on exit
+- The server automatically closes FalkorDB connections on exit
