@@ -43,7 +43,6 @@ src/
 ├── index.ts                    # MCP server entry point with tool/resource registration
 ├── services/
 │   ├── falkordb.service.ts     # FalkorDB connection and graph operations
-│   ├── redis.service.ts        # Redis service (retained for internal use only)
 │   └── logger.service.ts       # Logging and MCP notifications
 ├── config/
 │   └── index.ts                # Centralized configuration using dotenv
