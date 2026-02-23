@@ -51,7 +51,7 @@ src/
 ├── index.ts                    # MCP server entry point — tool/resource registration, stdio transport
 ├── services/
 │   ├── falkordb.service.ts     # FalkorDB connection and graph operations (singleton)
-│   └── redis.service.ts        # Redis key-value operations (singleton)
+│   └── logger.service.ts       # Logging and MCP notifications
 ├── config/
 │   └── index.ts                # Centralized configuration using dotenv
 ├── models/
@@ -66,19 +66,17 @@ src/
 ### MCP Tools Registered
 | Tool | Description |
 |------|-------------|
-| `query_graph` | Execute OpenCypher queries on a specific graph |
+| `query_graph` | Execute OpenCypher queries on a specific graph (with optional read-only mode) |
+| `query_graph_readonly` | Execute read-only OpenCypher queries |
 | `list_graphs` | List all available graphs in the database |
 | `delete_graph` | Delete a specific graph |
-| `set_key` | Store a value in Redis |
-| `get_key` | Retrieve a value from Redis |
 
 ### MCP Resources
 - `graph_list` — provides a markdown-formatted listing of all graphs
 
 ### Service Pattern
 - Services are exported as singleton instances
-- **FalkorDB Service** (`src/services/falkordb.service.ts`): manages connections, retries, and pooling; exposes `executeQuery()`, `listGraphs()`, `deleteGraph()`
-- **Redis Service** (`src/services/redis.service.ts`): manages Redis operations for key-value storage
+- **FalkorDB Service** (`src/services/falkordb.service.ts`): manages connections, retries, and pooling; exposes `executeQuery()`, `executeReadOnlyQuery()`, `listGraphs()`, `deleteGraph()`
 
 ### stdio Transport
 - The server communicates via **stdio**, not HTTP — console methods are redirected to stderr to prevent MCP protocol corruption
@@ -99,7 +97,7 @@ Environment variables (copy `.env.example` to `.env`):
 | `FALKORDB_PORT` | `6379` | FalkorDB port |
 | `FALKORDB_USERNAME` | — | Optional authentication |
 | `FALKORDB_PASSWORD` | — | Optional authentication |
-| `REDIS_URL` | — | Redis connection URL |
+| `FALKORDB_DEFAULT_READONLY` | `false` | Set to 'true' for read-only mode (useful for replicas) |
 
 ## MCP Client Integration
 
