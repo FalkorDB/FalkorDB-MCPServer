@@ -72,7 +72,7 @@
     "@types/node": "^20.14.0",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
-    "eslint": "^9.31.0",
+    "eslint": "^10.0.1",
     "jest": "^30.0.5",
     "nodemon": "^3.1.10",
     "ts-jest": "^29.4.0",
@@ -89,6 +89,9 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
+  },
+  "overrides": {
+    "minimatch": "^10.2.1"
   },
   "funding": {
     "type": "github",
