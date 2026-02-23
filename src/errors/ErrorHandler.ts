@@ -106,6 +106,7 @@ export class ErrorHandler {
     sanitized = sanitized.replace(/redis:\/\/[^@\s]+@[^\s]+/gi, 'redis://<credentials>@<host>');
     sanitized = sanitized.replace(/mongodb:\/\/[^@\s]+@[^\s]+/gi, 'mongodb://<credentials>@<host>');
     sanitized = sanitized.replace(/postgresql:\/\/[^@\s]+@[^\s]+/gi, 'postgresql://<credentials>@<host>');
+    sanitized = sanitized.replace(/falkordb:\/\/[^@\s]+@[^\s]+/gi, 'falkordb://<credentials>@<host>');
 
     // Remove potential password/token patterns (more specific to capture full values)
     sanitized = sanitized.replace(/password[=:]\s*(\S+)/gi, 'password=<redacted>');
@@ -116,8 +117,8 @@ export class ErrorHandler {
     sanitized = sanitized.replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+\b/g, '<host>:<port>');
     sanitized = sanitized.replace(/\blocalhost:\d+\b/g, 'localhost:<port>');
 
-    // Remove file paths (absolute paths) - use negative lookahead to avoid matching :// URLs
-    sanitized = sanitized.replace(/(?<!:)\/[\w\-./]+/g, '<path>');
+    // Remove file paths (absolute paths) - use negative lookbehind to avoid matching :// URLs
+    sanitized = sanitized.replace(/(?<!:)\/[\w./-]+/g, '<path>');
     sanitized = sanitized.replace(/\b[A-Z]:\\[\w\-\\]+/g, '<path>');
 
     return sanitized || 'An error occurred';

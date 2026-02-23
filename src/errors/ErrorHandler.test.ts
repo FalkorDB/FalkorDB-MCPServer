@@ -303,6 +303,18 @@ describe('ErrorHandler', () => {
       expect(result.content[0].text).not.toContain('user:pass');
     });
 
+    it('should sanitize falkordb connection strings with credentials', () => {
+      // Arrange
+      const error = new Error('Connection failed to falkordb://admin:secret@localhost:6379');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toContain('falkordb://<credentials>@<host>');
+      expect(result.content[0].text).not.toContain('admin:secret');
+    });
+
     it('should sanitize IP addresses and ports', () => {
       // Arrange
       const error = new Error('Connection refused to 192.168.1.100:6379');
