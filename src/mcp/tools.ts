@@ -11,9 +11,10 @@ const queryGraphInputSchema = {
   graphName: z.string().describe("The name of the graph to query"),
   query: z.string().describe("The OpenCypher query to run"),
   readOnly: z.boolean().optional().describe("If true, executes as a read-only query (GRAPH.RO_QUERY). Useful for replica instances or to prevent accidental writes. Defaults to FALKORDB_DEFAULT_READONLY environment variable."),
-} as const;
+};
 
 function registerQueryGraphTool(server: McpServer): void {
+  // @ts-ignore - Bypass TS2589 type inference recursion limit
   server.registerTool(
     "query_graph",
     {
@@ -62,7 +63,7 @@ function registerQueryGraphTool(server: McpServer): void {
 const queryGraphReadOnlyInputSchema = {
   graphName: z.string().describe("The name of the graph to query"),
   query: z.string().describe("The read-only OpenCypher query to run (write operations will fail)"),
-} as const;
+};
 
 function registerQueryGraphReadOnlyTool(server: McpServer): void {
   server.registerTool(
@@ -107,7 +108,7 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
   )
 }
 
-const listGraphsInputSchema = {} as const;
+const listGraphsInputSchema = {};
 
 function registerListGraphsTool(server: McpServer): void {
   // Register list_graphs tool
@@ -140,7 +141,7 @@ function registerListGraphsTool(server: McpServer): void {
 const deleteGraphInputSchema = {
   graphName: z.string().describe("The name of the graph to delete"),
   confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-} as const;
+};
 
 function registerDeleteGraphTool(server: McpServer): void {
   // Register delete_graph tool
@@ -178,7 +179,7 @@ function registerDeleteGraphTool(server: McpServer): void {
   );
 }
 
-const listKeysInputSchema = {} as const;
+const listKeysInputSchema = {};
 
 function registerListKeysTool(server: McpServer): void {
   server.registerTool(
@@ -210,7 +211,7 @@ function registerListKeysTool(server: McpServer): void {
 const setKeyInputSchema = {
   key: z.string().describe("The key to set"),
   value: z.string().describe("The value to set"),
-} as const;
+};
 
 function registerSetKeyTool(server: McpServer): void {
   // Register set_key tool
@@ -258,7 +259,7 @@ function registerSetKeyTool(server: McpServer): void {
 
 const getKeyInputSchema = {
   key: z.string().describe("The key to get."),
-} as const;
+};
 
 function registerGetKeyTool(server: McpServer): void {
   // Register get_key tool
@@ -299,7 +300,7 @@ function registerGetKeyTool(server: McpServer): void {
 const deleteKeyInputSchema = {
   key: z.string().describe("The key to delete"),
   confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-} as const;
+};
 
 function registerDeleteKeyTool(server: McpServer): void {
   server.registerTool(

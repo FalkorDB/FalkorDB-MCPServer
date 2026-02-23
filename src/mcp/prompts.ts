@@ -4,7 +4,7 @@ import { z } from "zod";
 // Extract Zod schemas as standalone constants to prevent TS2589 errors
 const userSetupArgsSchema = {
   name: z.string().describe("The name of the user"),
-} as const;
+};
 
 function registerUserSetupPrompt(server: McpServer): void {
   // Register user_setup prompt
@@ -61,9 +61,10 @@ const memoryQueryArgsSchema = {
   query: z.string().describe("The query or topic to search for in memory"),
   context: z.string().optional().describe("Additional context to help scope the search"),
   relationship_depth: z.coerce.number().min(1).max(3).describe("How many relationship hops to traverse (1-3)")
-} as const;
+};
 
 function registerMemoryQueryPrompt(server: McpServer): void {
+  // @ts-ignore - Bypass TS2589 type inference recursion limit
   server.registerPrompt(
     "memory_query",
     {
