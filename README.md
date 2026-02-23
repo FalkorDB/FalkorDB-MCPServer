@@ -41,7 +41,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
       "command": "npx",
       "args": [
         "-y",
-        "falkordb-mcpserver@latest"
+        "@falkordb/mcpserver@latest"
       ],
       "env": {
         "FALKORDB_HOST": "localhost",

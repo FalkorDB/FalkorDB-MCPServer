@@ -1,5 +1,5 @@
 {
-  "name": "falkordb-mcpserver",
+  "name": "@falkordb/mcpserver",
   "version": "1.0.1",
   "description": "Model Context Protocol server for FalkorDB graph databases - enables AI assistants to query and manage graph data using natural language",
   "main": "dist/index.js",
