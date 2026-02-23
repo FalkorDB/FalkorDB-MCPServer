@@ -71,11 +71,6 @@ function registerQueryGraphTool(server: McpServer): void {
   )
 }
 
-const queryGraphReadOnlyInputSchema = {
-  graphName: z.string().describe("The name of the graph to query"),
-  query: z.string().describe("The read-only OpenCypher query to run (write operations will fail)"),
-};
-
 function registerQueryGraphReadOnlyTool(server: McpServer): void {
   server.registerTool(
     "query_graph_readonly",
@@ -149,11 +144,6 @@ function registerListGraphsTool(server: McpServer): void {
     }
   );
 }
-
-const deleteGraphInputSchema = {
-  graphName: z.string().describe("The name of the graph to delete"),
-  confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-};
 
 function registerDeleteGraphTool(server: McpServer): void {
   // Register delete_graph tool
