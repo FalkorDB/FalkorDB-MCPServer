@@ -20,13 +20,19 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - PORT=3000
       - NODE_ENV=production
+      - MCP_TRANSPORT=${MCP_TRANSPORT:-stdio}
+      - MCP_PORT=3000
+      - MCP_API_KEY=${MCP_API_KEY:-}
       - FALKORDB_HOST=falkordb
       - FALKORDB_PORT=6379
       - FALKORDB_USERNAME=${FALKORDB_USERNAME:-}
       - FALKORDB_PASSWORD=${FALKORDB_PASSWORD:-}
-      - MCP_API_KEY=${MCP_API_KEY:-your_mcp_api_key_here}
+      - FALKORDB_DEFAULT_READONLY=${FALKORDB_DEFAULT_READONLY:-false}
+      - REDIS_URL=redis://falkordb:6379
+      - REDIS_USERNAME=${REDIS_USERNAME:-}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - ENABLE_FILE_LOGGING=${ENABLE_FILE_LOGGING:-false}
     depends_on:
       falkordb:
         condition: service_healthy
