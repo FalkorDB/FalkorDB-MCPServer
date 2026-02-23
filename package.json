@@ -1,6 +1,6 @@
 {
-  "name": "falkordb-mcpserver",
-  "version": "1.0.1",
+  "name": "@falkordb/mcpserver",
+  "version": "1.1.0",
   "description": "Model Context Protocol server for FalkorDB graph databases - enables AI assistants to query and manage graph data using natural language",
   "main": "dist/index.js",
   "type": "module",
@@ -32,7 +32,6 @@
     "claude",
     "opencypher",
     "cypher",
-    "redis",
     "graph",
     "database",
     "typescript",
@@ -85,7 +84,6 @@
     "dotenv": "^17.2.1",
     "falkordb": "^6.3.0",
     "platformdirs": "^4.3.8-rc3",
-    "redis": "^4.0.0",
     "zod": "^3.23.0"
   },
   "publishConfig": {
