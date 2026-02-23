@@ -10,12 +10,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SecKatie/falkordb-mcpserver.git"
+    "url": "git+https://github.com/FalkorDB/FalkorDB-MCPServer.git"
   },
   "bugs": {
-    "url": "https://github.com/SecKatie/falkordb-mcpserver/issues"
+    "url": "https://github.com/FalkorDB/FalkorDB-MCPServer/issues"
   },
-  "homepage": "https://github.com/SecKatie/falkordb-mcpserver#readme",
+  "homepage": "https://github.com/FalkorDB/FalkorDB-MCPServer#readme",
   "author": {
     "name": "Katie Mulliken",
     "email": "katie@mulliken.net",
