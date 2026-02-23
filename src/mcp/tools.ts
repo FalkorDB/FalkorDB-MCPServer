@@ -28,7 +28,7 @@ function registerQueryGraphTool(server: McpServer): void {
             true
           );
         }
-        
+
         if (!query?.trim()) {
           throw new AppError(
             CommonErrors.INVALID_INPUT,
@@ -36,13 +36,22 @@ function registerQueryGraphTool(server: McpServer): void {
             true
           );
         }
-        
+
+        // Enforce strict read-only mode if enabled
+        if (config.falkorDB.strictReadOnly && readOnly === false) {
+          throw new AppError(
+            CommonErrors.INVALID_INPUT,
+            'Cannot execute write queries: server is in strict read-only mode (FALKORDB_STRICT_READONLY=true)',
+            true
+          );
+        }
+
         // Use the provided readOnly flag, or fall back to the default from config
         const isReadOnly = readOnly !== undefined ? readOnly : config.falkorDB.defaultReadOnly;
-        
+
         const result = await falkorDBService.executeQuery(graphName, query, undefined, isReadOnly);
         await logger.debug('Query tool executed successfully', { graphName, readOnly: isReadOnly });
-        
+
         return {
           content: [{
             type: "text",
