@@ -2,15 +2,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 // Extract Zod schemas to break type recursion cycle
-const userSetupArgsSchema = {
+// Using z.object() wrapper to prevent TypeScript deep type inference
+const userSetupArgsSchema = z.object({
   name: z.string().describe("The name of the user"),
-} as const;
+}).shape;
 
-const memoryQueryArgsSchema = {
+const memoryQueryArgsSchema = z.object({
   query: z.string().describe("The query or topic to search for in memory"),
   context: z.string().optional().describe("Additional context to help scope the search"),
   relationship_depth: z.coerce.number().min(1).max(3).describe("How many relationship hops to traverse (1-3)")
-} as const;
+}).shape;
 
 function registerUserSetupPrompt(server: McpServer): void {
   // Register user_setup prompt

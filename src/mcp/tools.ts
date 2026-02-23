@@ -7,35 +7,36 @@ import { AppError, CommonErrors } from '../errors/AppError.js';
 import { config } from '../config/index.js';
 
 // Extract Zod schemas to break type recursion cycle
-const queryGraphSchema = {
+// Using z.object() wrapper to prevent TypeScript deep type inference
+const queryGraphSchema = z.object({
   graphName: z.string().describe("The name of the graph to query"),
   query: z.string().describe("The OpenCypher query to run"),
   readOnly: z.boolean().optional().describe("If true, executes as a read-only query (GRAPH.RO_QUERY). Useful for replica instances or to prevent accidental writes. Defaults to FALKORDB_DEFAULT_READONLY environment variable."),
-} as const;
+}).shape;
 
-const queryGraphReadOnlySchema = {
+const queryGraphReadOnlySchema = z.object({
   graphName: z.string().describe("The name of the graph to query"),
   query: z.string().describe("The read-only OpenCypher query to run (write operations will fail)"),
-} as const;
+}).shape;
 
-const deleteGraphSchema = {
+const deleteGraphSchema = z.object({
   graphName: z.string().describe("The name of the graph to delete"),
   confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-} as const;
+}).shape;
 
-const setKeySchema = {
+const setKeySchema = z.object({
   key: z.string().describe("The key to set"),
   value: z.string().describe("The value to set"),
-} as const;
+}).shape;
 
-const getKeySchema = {
+const getKeySchema = z.object({
   key: z.string().describe("The key to get."),
-} as const;
+}).shape;
 
-const deleteKeySchema = {
+const deleteKeySchema = z.object({
   key: z.string().describe("The key to delete"),
   confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-} as const;
+}).shape;
 
 function registerQueryGraphTool(server: McpServer): void {
   server.registerTool(
