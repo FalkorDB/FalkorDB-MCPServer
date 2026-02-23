@@ -1,49 +1,152 @@
 import { FalkorDB } from 'falkordb';
-import { config } from '../config';
+import { config } from '../config/index.js';
+import { AppError, CommonErrors } from '../errors/AppError.js';
+import { logger } from './logger.service.js';
+
+// Local type alias to avoid importing internal types from 'falkordb/dist/src/...'
+// This provides better compatibility across falkordb versions
+type GraphReply = unknown;
 
 class FalkorDBService {
   private client: FalkorDB | null = null;
+  private readonly maxRetries = 5;
+  private retryCount = 0;
+  private initializingPromise: Promise<void> | null = null;
 
   constructor() {
-    this.init();
+    // Don't initialize in constructor - use explicit initialization
   }
 
-  private async init() {
+  async initialize(): Promise<void> {
+    // Idempotency guard: skip if already connected
+    if (this.client) {
+      return;
+    }
+
+    if (this.initializingPromise) {
+      return this.initializingPromise;
+    }
+
+    this.retryCount = 0;
+    this.initializingPromise = this._initialize();
+
     try {
-      this.client = await FalkorDB.connect({
-        socket: {
+      await this.initializingPromise;
+    } finally {
+      this.initializingPromise = null;
+    }
+  }
+
+  private async _initialize(): Promise<void> {
+    for (;; this.retryCount++) {
+      try {
+        // Fire-and-forget: informational log, not critical
+        logger.info('Attempting to connect to FalkorDB', {
           host: config.falkorDB.host,
           port: config.falkorDB.port,
-        },
-        password: config.falkorDB.password,
-        username: config.falkorDB.username,
-      });
-      
-      // Test connection
-      const connection = await this.client.connection;
-      await connection.ping();
-      console.log('Successfully connected to FalkorDB');
-    } catch (error) {
-      console.error('Failed to connect to FalkorDB:', error);
-      // Retry connection after a delay
-      setTimeout(() => this.init(), 5000);
+          attempt: this.retryCount + 1
+        });
+
+        this.client = await FalkorDB.connect({
+          socket: {
+            host: config.falkorDB.host,
+            port: config.falkorDB.port,
+          },
+          password: config.falkorDB.password,
+          username: config.falkorDB.username,
+        });
+
+        // Test connection
+        const connection = await this.client.connection;
+        await connection.ping();
+
+        // Fire-and-forget: informational log, not critical
+        logger.info('Successfully connected to FalkorDB');
+        this.retryCount = 0;
+        return;
+      } catch (error) {
+        // Clean up any partially connected client before retrying or throwing
+        if (this.client) {
+          try {
+            await this.client.close();
+          } catch {
+            // Ignore cleanup errors
+          }
+          this.client = null;
+        }
+        
+        if (this.retryCount < this.maxRetries) {
+          // Fire-and-forget: informational log before retry delay
+          logger.warn('Failed to connect to FalkorDB, retrying...', {
+            attempt: this.retryCount + 1,
+            maxRetries: this.maxRetries,
+            error: error instanceof Error ? error.message : String(error)
+          });
+
+          const delay = Math.min(5000 * 2 ** this.retryCount, 30000) + Math.random() * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          const appError = new AppError(
+            CommonErrors.CONNECTION_FAILED,
+            `Failed to connect to FalkorDB after ${this.maxRetries} attempts: ${error instanceof Error ? error.message : String(error)}`,
+            true
+          );
+          
+          await logger.error('FalkorDB connection failed permanently', appError);
+          throw appError;
+        }
+      }
     }
   }
 
-  async executeQuery(graphName: string, query: string, params?: Record<string, any>): Promise<any> {
+  async executeQuery(graphName: string, query: string, params?: Record<string, any>, readOnly: boolean = false): Promise<GraphReply> {
     if (!this.client) {
-      throw new Error('FalkorDB client not initialized');
+      throw new AppError(
+        CommonErrors.CONNECTION_FAILED,
+        'FalkorDB client not initialized. Call initialize() first.',
+        true
+      );
     }
-    
+
     try {
       const graph = this.client.selectGraph(graphName);
-      const result = await graph.query(query, params);
+      const result = readOnly 
+        ? await graph.roQuery(query, params)
+        : await graph.query(query, params);
+      
+      // Fire-and-forget: informational log, not critical
+      logger.debug('Query executed successfully', {
+        graphName,
+        query: query.substring(0, 100) + (query.length > 100 ? '...' : ''),
+        hasParams: !!params,
+        readOnly
+      });
+      
       return result;
     } catch (error) {
-      const sanitizedGraphName = graphName.replace(/\n|\r/g, "");
-      console.error('Error executing FalkorDB query on graph %s:', sanitizedGraphName, error);
-      throw error;
+      const appError = new AppError(
+        CommonErrors.OPERATION_FAILED,
+        `Failed to execute ${readOnly ? 'read-only ' : ''}query on graph '${graphName}': ${error instanceof Error ? error.message : String(error)}`,
+        true
+      );
+
+      // Sanitize query for error logging using same truncation as debug logs
+      const safeQuery = query.substring(0, 100) + (query.length > 100 ? '...' : '');
+      await logger.error('Query execution failed', appError, { graphName, query: safeQuery, readOnly });
+      throw appError;
     }
+  }
+
+  /**
+   * Execute a read-only query on a specific graph
+   * This is useful for replica instances or when you want to ensure no writes occur
+   * @param graphName - The name of the graph to query
+   * @param query - The OpenCypher query to execute
+   * @param params - Optional query parameters
+   * @returns Query result
+   */
+  async executeReadOnlyQuery(graphName: string, query: string, params?: Record<string, any>): Promise<GraphReply> {
+    return this.executeQuery(graphName, query, params, true);
   }
 
   /**
@@ -52,22 +155,68 @@ class FalkorDBService {
    */
   async listGraphs(): Promise<string[]> {
     if (!this.client) {
-      throw new Error('FalkorDB client not initialized');
+      throw new AppError(
+        CommonErrors.CONNECTION_FAILED,
+        'FalkorDB client not initialized. Call initialize() first.',
+        true
+      );
     }
 
     try {
-      // Using the simplified list method which always returns an array
-      return await this.client.list();
+      const graphs = await this.client.list();
+      // Fire-and-forget: informational log, not critical
+      logger.debug('Listed graphs successfully', { count: graphs.length });
+      return graphs;
     } catch (error) {
-      console.error('Error listing FalkorDB graphs:', error);
-      throw error;
+      const appError = new AppError(
+        CommonErrors.OPERATION_FAILED,
+        `Failed to list graphs: ${error instanceof Error ? error.message : String(error)}`,
+        true
+      );
+      
+      await logger.error('Failed to list graphs', appError);
+      throw appError;
     }
   }
 
-  async close() {
+  async deleteGraph(graphName: string): Promise<void> {
+    if (!this.client) {
+      throw new AppError(
+        CommonErrors.CONNECTION_FAILED,
+        'FalkorDB client not initialized. Call initialize() first.',
+        true
+      );
+    }
+
+    try {
+      await this.client.selectGraph(graphName).delete();
+      // Fire-and-forget: informational log, not critical
+      logger.info('Graph deleted successfully', { graphName });
+    } catch (error) {
+      const appError = new AppError(
+        CommonErrors.OPERATION_FAILED,
+        `Failed to delete graph '${graphName}': ${error instanceof Error ? error.message : String(error)}`,
+        true
+      );
+      
+      await logger.error('Failed to delete graph', appError, { graphName });
+      throw appError;
+    }
+  }
+
+  async close(): Promise<void> {
     if (this.client) {
-      await this.client.close();
-      this.client = null;
+      try {
+        await this.client.close();
+        // Fire-and-forget: informational log, not critical
+        logger.info('FalkorDB connection closed successfully');
+      } catch (error) {
+        // Fire-and-forget: best-effort log during shutdown
+        logger.error('Error closing FalkorDB connection', error instanceof Error ? error : new Error(String(error)));
+      } finally {
+        this.client = null;
+        this.retryCount = 0;
+      }
     }
   }
 }
