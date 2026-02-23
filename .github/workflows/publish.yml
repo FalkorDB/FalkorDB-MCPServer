@@ -34,5 +34,11 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Set version from Git tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Setting version to $VERSION"
+          npm version "$VERSION" --no-git-tag-version
+
       - name: Publish
         run: npm publish --provenance --access public
