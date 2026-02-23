@@ -1,0 +1,41 @@
+services:
+  falkordb:
+    image: falkordb/falkordb:latest
+    container_name: falkordb
+    ports:
+      - "6379:6379"
+    volumes:
+      - falkordb-data:/data
+    networks:
+      - falkordb-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  falkordb-mcpserver:
+    build: .
+    container_name: falkordb-mcpserver
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - FALKORDB_HOST=falkordb
+      - FALKORDB_PORT=6379
+      - FALKORDB_USERNAME=${FALKORDB_USERNAME:-}
+      - FALKORDB_PASSWORD=${FALKORDB_PASSWORD:-}
+      - MCP_API_KEY=${MCP_API_KEY:-your_mcp_api_key_here}
+    depends_on:
+      falkordb:
+        condition: service_healthy
+    networks:
+      - falkordb-network
+
+networks:
+  falkordb-network:
+    driver: bridge
+
+volumes:
+  falkordb-data:

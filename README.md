@@ -47,6 +47,47 @@ Configuration is managed through environment variables in the `.env` file:
 
 ## Usage
 
+### Using Docker Compose (Recommended)
+
+The easiest way to run FalkorDB and FalkorDB-MCPServer together is using Docker Compose:
+
+1. Create a `.env` file (optional, for custom configuration):
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Edit the `.env` file if you need to customize settings like `MCP_API_KEY`.
+
+2. Start both services:
+
+   ```bash
+   docker-compose up -d
+   ```
+
+   This will:
+   - Start a FalkorDB instance on port 6379
+   - Build and start the FalkorDB-MCPServer on port 3000
+   - Create a persistent volume for FalkorDB data
+
+3. Check the logs:
+
+   ```bash
+   docker-compose logs -f
+   ```
+
+4. Stop the services:
+
+   ```bash
+   docker-compose down
+   ```
+
+   To also remove the data volume:
+
+   ```bash
+   docker-compose down -v
+   ```
+
 ### Development
 
 Start the development server with hot-reloading:
