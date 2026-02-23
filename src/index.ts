@@ -17,7 +17,12 @@ const { version } = require('../package.json');
 // Setup global error handlers following Node.js best practices
 process.on('uncaughtException', (error: Error) => {
   logger.errorSync('Uncaught exception occurred', error);
-  errorHandler.handleError(error);
+  void errorHandler.handleError(error).catch((handlerError) => {
+    logger.errorSync(
+      'Error while handling uncaught exception',
+      handlerError instanceof Error ? handlerError : new Error(String(handlerError))
+    );
+  });
   errorHandler.crashIfUntrustedError(error);
 });
 

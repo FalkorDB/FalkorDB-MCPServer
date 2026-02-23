@@ -21,7 +21,7 @@ This server implements the [Model Context Protocol (MCP)](https://modelcontextpr
 
 ### Prerequisites
 
-- Node.js 16+ 
+- Node.js 18+ 
 - FalkorDB instance (running locally or remotely)
 - Claude Desktop app (for AI integration)
 

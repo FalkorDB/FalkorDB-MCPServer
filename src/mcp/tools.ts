@@ -50,7 +50,7 @@ function registerQueryGraphTool(server: McpServer): void {
           }]
         };
       } catch (error) {
-        await logger.error('Query tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, query });
+        await logger.error('Query tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, query: query.substring(0, 100) + (query.length > 100 ? '...' : '') });
         throw error;
       }
     }
@@ -96,7 +96,7 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
           }]
         };
       } catch (error) {
-        await logger.error('Read-only query tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, query });
+        await logger.error('Read-only query tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, query: query.substring(0, 100) + (query.length > 100 ? '...' : '') });
         throw error;
       }
     }
