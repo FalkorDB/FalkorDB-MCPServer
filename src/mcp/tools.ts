@@ -7,36 +7,37 @@ import { AppError, CommonErrors } from '../errors/AppError.js';
 import { config } from '../config/index.js';
 
 // Extract Zod schemas to break type recursion cycle
-// Using z.object() wrapper to prevent TypeScript deep type inference
-const queryGraphSchema = z.object({
+// Using type assertion to prevent TypeScript from deeply inferring Zod schema types
+// This is necessary because the MCP SDK's registerTool causes TS2589 during coverage collection
+const queryGraphSchema = {
   graphName: z.string().describe("The name of the graph to query"),
   query: z.string().describe("The OpenCypher query to run"),
   readOnly: z.boolean().optional().describe("If true, executes as a read-only query (GRAPH.RO_QUERY). Useful for replica instances or to prevent accidental writes. Defaults to FALKORDB_DEFAULT_READONLY environment variable."),
-}).shape;
+} as any;
 
-const queryGraphReadOnlySchema = z.object({
+const queryGraphReadOnlySchema = {
   graphName: z.string().describe("The name of the graph to query"),
   query: z.string().describe("The read-only OpenCypher query to run (write operations will fail)"),
-}).shape;
+} as any;
 
-const deleteGraphSchema = z.object({
+const deleteGraphSchema = {
   graphName: z.string().describe("The name of the graph to delete"),
   confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-}).shape;
+} as any;
 
-const setKeySchema = z.object({
+const setKeySchema = {
   key: z.string().describe("The key to set"),
   value: z.string().describe("The value to set"),
-}).shape;
+} as any;
 
-const getKeySchema = z.object({
+const getKeySchema = {
   key: z.string().describe("The key to get."),
-}).shape;
+} as any;
 
-const deleteKeySchema = z.object({
+const deleteKeySchema = {
   key: z.string().describe("The key to delete"),
   confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-}).shape;
+} as any;
 
 function registerQueryGraphTool(server: McpServer): void {
   server.registerTool(
