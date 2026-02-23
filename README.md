@@ -54,6 +54,32 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
+### Running with npx
+
+You can run the server directly from the command line using npx:
+
+**Using inline environment variables:**
+
+```bash
+# Run with stdio transport (default)
+FALKORDB_HOST=localhost FALKORDB_PORT=6379 npx -y @falkordb/mcpserver
+
+# Run with HTTP transport
+MCP_TRANSPORT=http MCP_PORT=3005 FALKORDB_HOST=localhost FALKORDB_PORT=6379 npx -y @falkordb/mcpserver
+```
+
+**Using a .env file:**
+
+```bash
+# Using dotenv-cli to load environment variables from .env
+npx dotenv-cli -e .env -- npx @falkordb/mcpserver
+```
+
+This is useful for:
+- Quick testing and development
+- Running the server standalone without Claude Desktop
+- Custom integrations and scripting
+
 ### Installation
 
 1. **Clone and install:**
