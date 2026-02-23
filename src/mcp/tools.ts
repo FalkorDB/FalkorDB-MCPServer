@@ -6,18 +6,20 @@ import { logger } from '../services/logger.service.js';
 import { AppError, CommonErrors } from '../errors/AppError.js';
 import { config } from '../config/index.js';
 
+// Extract Zod schemas as standalone constants to prevent TS2589 errors
+const queryGraphInputSchema = {
+  graphName: z.string().describe("The name of the graph to query"),
+  query: z.string().describe("The OpenCypher query to run"),
+  readOnly: z.boolean().optional().describe("If true, executes as a read-only query (GRAPH.RO_QUERY). Useful for replica instances or to prevent accidental writes. Defaults to FALKORDB_DEFAULT_READONLY environment variable."),
+} as const;
+
 function registerQueryGraphTool(server: McpServer): void {
-  // @ts-expect-error TS2589 - MCP SDK registerTool type inference exceeds recursion limit
   server.registerTool(
     "query_graph",
     {
       title: "Query Graph",
       description: "Run an OpenCypher query on a graph. Supports both read-write and read-only queries.",
-      inputSchema: {
-        graphName: z.string().describe("The name of the graph to query"),
-        query: z.string().describe("The OpenCypher query to run"),
-        readOnly: z.boolean().optional().describe("If true, executes as a read-only query (GRAPH.RO_QUERY). Useful for replica instances or to prevent accidental writes. Defaults to FALKORDB_DEFAULT_READONLY environment variable."),
-      },
+      inputSchema: queryGraphInputSchema,
     },
     async ({graphName, query, readOnly}) => {
       try {
@@ -57,16 +59,18 @@ function registerQueryGraphTool(server: McpServer): void {
   )
 }
 
+const queryGraphReadOnlyInputSchema = {
+  graphName: z.string().describe("The name of the graph to query"),
+  query: z.string().describe("The read-only OpenCypher query to run (write operations will fail)"),
+} as const;
+
 function registerQueryGraphReadOnlyTool(server: McpServer): void {
   server.registerTool(
     "query_graph_readonly",
     {
       title: "Query Graph (Read-Only)",
       description: "Run a read-only OpenCypher query on a graph using GRAPH.RO_QUERY. This ensures no write operations are performed and is ideal for replica instances.",
-      inputSchema: {
-        graphName: z.string().describe("The name of the graph to query"),
-        query: z.string().describe("The read-only OpenCypher query to run (write operations will fail)"),
-      },
+      inputSchema: queryGraphReadOnlyInputSchema,
     },
     async ({graphName, query}) => {
       try {
@@ -103,6 +107,8 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
   )
 }
 
+const listGraphsInputSchema = {} as const;
+
 function registerListGraphsTool(server: McpServer): void {
   // Register list_graphs tool
   server.registerTool(
@@ -110,7 +116,7 @@ function registerListGraphsTool(server: McpServer): void {
     {
       title: "List Graphs",
       description: "List all graphs available to query",
-      inputSchema: {},
+      inputSchema: listGraphsInputSchema,
     },
     async () => {
       try {
@@ -131,6 +137,11 @@ function registerListGraphsTool(server: McpServer): void {
   );
 }
 
+const deleteGraphInputSchema = {
+  graphName: z.string().describe("The name of the graph to delete"),
+  confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
+} as const;
+
 function registerDeleteGraphTool(server: McpServer): void {
   // Register delete_graph tool
   server.registerTool(
@@ -138,10 +149,7 @@ function registerDeleteGraphTool(server: McpServer): void {
     {
       title: "Delete Graph",
       description: "Permanently delete a graph from the database. WARNING: This action is irreversible. You must set confirmDelete to true to proceed.",
-      inputSchema: {
-        graphName: z.string().describe("The name of the graph to delete"),
-        confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-      },
+      inputSchema: deleteGraphInputSchema,
     },
     async ({graphName}) => {
       try {
@@ -170,13 +178,15 @@ function registerDeleteGraphTool(server: McpServer): void {
   );
 }
 
+const listKeysInputSchema = {} as const;
+
 function registerListKeysTool(server: McpServer): void {
   server.registerTool(
     "list_keys",
     {
       title: "List Keys",
       description: "List all keys in Redis",
-      inputSchema: {},
+      inputSchema: listKeysInputSchema,
     },
     async () => {
       try {
@@ -197,6 +207,11 @@ function registerListKeysTool(server: McpServer): void {
   );
 }
 
+const setKeyInputSchema = {
+  key: z.string().describe("The key to set"),
+  value: z.string().describe("The value to set"),
+} as const;
+
 function registerSetKeyTool(server: McpServer): void {
   // Register set_key tool
   server.registerTool(
@@ -204,10 +219,7 @@ function registerSetKeyTool(server: McpServer): void {
     {
       title: "Set Key",
       description: "Set a key in Redis",
-      inputSchema: {
-        key: z.string().describe("The key to set"),
-        value: z.string().describe("The value to set"),
-      },
+      inputSchema: setKeyInputSchema,
     },
     async ({key, value}) => {
       try {
@@ -244,6 +256,10 @@ function registerSetKeyTool(server: McpServer): void {
   );
 }
 
+const getKeyInputSchema = {
+  key: z.string().describe("The key to get."),
+} as const;
+
 function registerGetKeyTool(server: McpServer): void {
   // Register get_key tool
   server.registerTool(
@@ -251,9 +267,7 @@ function registerGetKeyTool(server: McpServer): void {
     {
       title: "Get Key",
       description: "Get a key from Redis",
-      inputSchema: {
-        key: z.string().describe("The key to get."),
-      },
+      inputSchema: getKeyInputSchema,
     },
     async ({key}) => {
       try {
@@ -282,16 +296,18 @@ function registerGetKeyTool(server: McpServer): void {
   );
 }
 
+const deleteKeyInputSchema = {
+  key: z.string().describe("The key to delete"),
+  confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
+} as const;
+
 function registerDeleteKeyTool(server: McpServer): void {
   server.registerTool(
     "delete_key",
     {
       title: "Delete Key",
       description: "Permanently delete a key from Redis. WARNING: This action is irreversible. You must set confirmDelete to true to proceed.",
-      inputSchema: {
-        key: z.string().describe("The key to delete"),
-        confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-      },
+      inputSchema: deleteKeyInputSchema,
     },
     async ({key}) => {
       try {
