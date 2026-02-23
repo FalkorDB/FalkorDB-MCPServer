@@ -79,6 +79,27 @@ This is useful for:
 - Running the server standalone without Claude Desktop
 - Custom integrations and scripting
 
+### Docker Compose
+
+Run FalkorDB and the MCP server together:
+
+```bash
+cp .env.example .env   # create env file; edit to set MCP_API_KEY, FALKORDB_PASSWORD, etc.
+docker compose up -d
+```
+
+> **Note:** Skipping the `.env` file leaves variables like `MCP_API_KEY` and `FALKORDB_PASSWORD` empty, which disables API key authentication and uses no database password.
+
+This starts FalkorDB with health checks and persistent volumes, plus the MCP server pre-configured to connect to it.
+
+The MCP server runs in **HTTP transport** mode and is exposed on `localhost:3000` by default. To connect a client, configure it to use:
+
+- **Transport:** `http`
+- **URL:** `http://localhost:3000`
+- **API Key:** Set via the `MCP_API_KEY` environment variable (optional)
+
+See `docker-compose.yml` for the exact port and configuration values.
+
 ### Installation
 
 1. **Clone and install:**
@@ -286,7 +307,25 @@ Requests without a valid key receive a `401 Unauthorized` response. Auth is only
 
 ### Using with Docker
 
-Build and run the MCP server in a Docker container (defaults to HTTP transport):
+**Using pre-built images from Docker Hub:**
+
+```bash
+# Use the latest stable release
+docker pull falkordb/mcpserver:latest
+docker run -p 3000:3000 \
+  -e FALKORDB_HOST=host.docker.internal \
+  -e FALKORDB_PORT=6379 \
+  -e MCP_API_KEY=your-secret-key \
+  falkordb/mcpserver:latest
+
+# Or use the edge version (latest main branch)
+docker pull falkordb/mcpserver:edge
+
+# Or pin to a specific version
+docker pull falkordb/mcpserver:1.0.0
+```
+
+**Building locally:**
 
 ```bash
 docker build -t falkordb-mcpserver .
@@ -307,7 +346,7 @@ services:
       - "6379:6379"
 
   mcp-server:
-    build: .
+    image: falkordb/mcpserver:latest  # or use 'build: .' to build locally
     ports:
       - "3000:3000"
     environment:
