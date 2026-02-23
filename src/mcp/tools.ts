@@ -42,7 +42,7 @@ function registerQueryGraphTool(server: McpServer): void {
             true
           );
         }
-        
+
         if (!query?.trim()) {
           throw new AppError(
             CommonErrors.INVALID_INPUT,
@@ -50,13 +50,22 @@ function registerQueryGraphTool(server: McpServer): void {
             true
           );
         }
-        
+
         // Use the provided readOnly flag, or fall back to the default from config
         const isReadOnly = readOnly !== undefined ? readOnly : config.falkorDB.defaultReadOnly;
-        
+
+        // Enforce strict read-only mode if enabled
+        if (config.falkorDB.strictReadOnly && !isReadOnly) {
+          throw new AppError(
+            CommonErrors.INVALID_INPUT,
+            'Cannot execute write queries: server is in strict read-only mode (FALKORDB_STRICT_READONLY=true)',
+            true
+          );
+        }
+
         const result = await falkorDBService.executeQuery(graphName, query, undefined, isReadOnly);
         await logger.debug('Query tool executed successfully', { graphName, readOnly: isReadOnly });
-        
+
         return {
           content: [{
             type: "text" as const,
@@ -162,7 +171,16 @@ function registerDeleteGraphTool(server: McpServer): void {
             true
           );
         }
-        
+
+        // Enforce strict read-only mode if enabled
+        if (config.falkorDB.strictReadOnly) {
+          throw new AppError(
+            CommonErrors.INVALID_INPUT,
+            'Cannot delete graphs: server is in strict read-only mode (FALKORDB_STRICT_READONLY=true)',
+            true
+          );
+        }
+
         await falkorDBService.deleteGraph(graphName);
         await logger.info('Delete graph tool executed successfully', { graphName });
         
@@ -179,6 +197,7 @@ function registerDeleteGraphTool(server: McpServer): void {
     }
   );
 }
+
 
 export default function registerAllTools(server: McpServer): void {
   // Register query_graph tools

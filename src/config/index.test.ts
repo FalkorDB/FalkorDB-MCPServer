@@ -15,6 +15,8 @@ describe('Config', () => {
     expect(config.falkorDB).toHaveProperty('password');
     expect(config.falkorDB).toHaveProperty('defaultReadOnly');
     expect(typeof config.falkorDB.defaultReadOnly).toBe('boolean');
+    expect(config.falkorDB).toHaveProperty('strictReadOnly');
+    expect(typeof config.falkorDB.strictReadOnly).toBe('boolean');
   });
 
   test('should have MCP configuration', () => {
