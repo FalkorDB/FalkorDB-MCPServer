@@ -83,7 +83,7 @@
     "dotenv": "^17.2.1",
     "falkordb": "^6.3.0",
     "platformdirs": "^4.3.8-rc3",
-    "zod": "^3.23.0"
+    "zod": "^4.3.6"
   },
   "publishConfig": {
     "access": "public",
