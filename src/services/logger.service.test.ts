@@ -103,6 +103,11 @@ describe('Logger Service', () => {
   });
 
   describe('MCP Server Integration', () => {
+    afterEach(() => {
+      // Clear all registered servers after each test to prevent test pollution
+      logger.clearMcpServers();
+    });
+
     it('should accept MCP server instance without throwing', () => {
       const mockMcpServer = {
         server: {
