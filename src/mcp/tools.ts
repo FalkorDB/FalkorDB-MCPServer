@@ -6,73 +6,36 @@ import { logger } from '../services/logger.service.js';
 import { AppError, CommonErrors } from '../errors/AppError.js';
 import { config } from '../config/index.js';
 
-// Extract Zod schemas to break type recursion cycle
-// Using type assertion to prevent TypeScript from deeply inferring Zod schema types
-// This is necessary because the MCP SDK's registerTool causes TS2589 during coverage collection
-//
-// Pattern used:
-// 1. Define raw schema object
-// 2. Create Zod object from raw schema (for type inference)
-// 3. Infer TS type from Zod object
-// 4. Pass raw schema cast as 'any' to registerTool (breaks recursion)
-// 5. Explicitly cast 'args' to inferred type in handler
+// Define schemas as simple objects first to avoid TS2589 deep recursion
 const queryGraphSchema = {
   graphName: z.string().describe("The name of the graph to query"),
   query: z.string().describe("The OpenCypher query to run"),
   readOnly: z.boolean().optional().describe("If true, executes as a read-only query (GRAPH.RO_QUERY). Useful for replica instances or to prevent accidental writes. Defaults to FALKORDB_DEFAULT_READONLY environment variable."),
 };
 
-const QueryGraphSchemaObj = z.object(queryGraphSchema);
-type QueryGraphArgs = z.infer<typeof QueryGraphSchemaObj>;
-
 const queryGraphReadOnlySchema = {
   graphName: z.string().describe("The name of the graph to query"),
   query: z.string().describe("The read-only OpenCypher query to run (write operations will fail)"),
 };
-
-const QueryGraphReadOnlySchemaObj = z.object(queryGraphReadOnlySchema);
-type QueryGraphReadOnlyArgs = z.infer<typeof QueryGraphReadOnlySchemaObj>;
 
 const deleteGraphSchema = {
   graphName: z.string().describe("The name of the graph to delete"),
   confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
 };
 
-const DeleteGraphSchemaObj = z.object(deleteGraphSchema);
-type DeleteGraphArgs = z.infer<typeof DeleteGraphSchemaObj>;
-
 const setKeySchema = {
   key: z.string().describe("The key to set"),
   value: z.string().describe("The value to set"),
 };
 
-const SetKeySchemaObj = z.object(setKeySchema);
-type SetKeyArgs = z.infer<typeof SetKeySchemaObj>;
-
 const getKeySchema = {
   key: z.string().describe("The key to get."),
 };
-
-const GetKeySchemaObj = z.object(getKeySchema);
-type GetKeyArgs = z.infer<typeof GetKeySchemaObj>;
 
 const deleteKeySchema = {
   key: z.string().describe("The key to delete"),
   confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
 };
-
-const DeleteKeySchemaObj = z.object(deleteKeySchema);
-type DeleteKeyArgs = z.infer<typeof DeleteKeySchemaObj>;
-
-// Suppress unused variable warnings for schema objects
-// These objects are used to infer types but are not used at runtime
-// This pattern is necessary to avoid TS2589 deep recursion errors
-void QueryGraphSchemaObj;
-void QueryGraphReadOnlySchemaObj;
-void DeleteGraphSchemaObj;
-void SetKeySchemaObj;
-void GetKeySchemaObj;
-void DeleteKeySchemaObj;
 
 function registerQueryGraphTool(server: McpServer): void {
   server.registerTool(
@@ -80,10 +43,12 @@ function registerQueryGraphTool(server: McpServer): void {
     {
       title: "Query Graph",
       description: "Run an OpenCypher query on a graph. Supports both read-write and read-only queries.",
-      inputSchema: queryGraphSchema as any,
+      inputSchema: queryGraphSchema as any, // Cast to any to prevent TS2589 (deep recursion) during type inference
     },
-    async (args: any) => {
-      const {graphName, query, readOnly} = args as QueryGraphArgs;
+    async (args: unknown) => {
+      // Manual validation since we're using raw shape for registration
+      const {graphName, query, readOnly} = z.object(queryGraphSchema).parse(args);
+      
       try {
         if (!graphName?.trim()) {
           throw new AppError(
@@ -129,8 +94,8 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
       description: "Run a read-only OpenCypher query on a graph using GRAPH.RO_QUERY. This ensures no write operations are performed and is ideal for replica instances.",
       inputSchema: queryGraphReadOnlySchema as any,
     },
-    async (args: any) => {
-      const {graphName, query} = args as QueryGraphReadOnlyArgs;
+    async (args: unknown) => {
+      const {graphName, query} = z.object(queryGraphReadOnlySchema).parse(args);
       try {
         if (!graphName?.trim()) {
           throw new AppError(
@@ -202,8 +167,8 @@ function registerDeleteGraphTool(server: McpServer): void {
       description: "Permanently delete a graph from the database. WARNING: This action is irreversible. You must set confirmDelete to true to proceed.",
       inputSchema: deleteGraphSchema as any,
     },
-    async (args: any) => {
-      const {graphName} = args as DeleteGraphArgs;
+    async (args: unknown) => {
+      const {graphName} = z.object(deleteGraphSchema).parse(args);
       try {
         if (!graphName?.trim()) {
           throw new AppError(
@@ -266,8 +231,8 @@ function registerSetKeyTool(server: McpServer): void {
       description: "Set a key in Redis",
       inputSchema: setKeySchema as any,
     },
-    async (args: any) => {
-      const {key, value} = args as SetKeyArgs;
+    async (args: unknown) => {
+      const {key, value} = z.object(setKeySchema).parse(args);
       try {
         if (!key?.trim()) {
           throw new AppError(
@@ -311,8 +276,8 @@ function registerGetKeyTool(server: McpServer): void {
       description: "Get a key from Redis",
       inputSchema: getKeySchema as any,
     },
-    async (args: any) => {
-      const {key} = args as GetKeyArgs;
+    async (args: unknown) => {
+      const {key} = z.object(getKeySchema).parse(args);
       try {
         if (!key?.trim()) {
           throw new AppError(
@@ -347,8 +312,8 @@ function registerDeleteKeyTool(server: McpServer): void {
       description: "Permanently delete a key from Redis. WARNING: This action is irreversible. You must set confirmDelete to true to proceed.",
       inputSchema: deleteKeySchema as any,
     },
-    async (args: any) => {
-      const {key} = args as DeleteKeyArgs;
+    async (args: unknown) => {
+      const {key} = z.object(deleteKeySchema).parse(args);
       try {
         if (!key?.trim()) {
           throw new AppError(
