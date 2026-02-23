@@ -210,6 +210,28 @@ src/
 
 ## 🔧 Advanced Configuration
 
+### Transport Modes
+
+The server supports two transport modes:
+
+#### stdio (default)
+Used for direct integration with AI clients like Claude Desktop. Communication happens via standard input/output.
+
+```env
+MCP_TRANSPORT=stdio
+```
+
+#### Streamable HTTP
+Exposes the MCP server over HTTP for remote or networked access. Supports multiple concurrent sessions via the MCP Streamable HTTP protocol.
+
+```env
+MCP_TRANSPORT=http
+MCP_PORT=3000
+MCP_API_KEY=your-secret-api-key  # Optional but recommended
+```
+
+When using HTTP transport, clients connect by sending a POST request with an `initialize` message. The server returns an `Mcp-Session-Id` header that must be included in subsequent requests. API key authentication is enforced via the `Authorization: Bearer <key>` header when `MCP_API_KEY` is set.
+
 ### Using with Remote FalkorDB
 
 For cloud-hosted FalkorDB instances:

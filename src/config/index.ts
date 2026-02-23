@@ -7,7 +7,7 @@ dotenv.config({
 
 export const config = {
   server: {
-    port: process.env.PORT || 3000,
+    port: parseInt(process.env.PORT || process.env.MCP_PORT || '3000'),
     nodeEnv: process.env.NODE_ENV || 'development',
   },
   falkorDB: {
@@ -23,6 +23,7 @@ export const config = {
     password: process.env.REDIS_PASSWORD || '',
   },
   mcp: {
+    transport: (process.env.MCP_TRANSPORT || 'stdio') as 'stdio' | 'http',
     apiKey: process.env.MCP_API_KEY || '',
   },
 };
