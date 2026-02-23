@@ -57,8 +57,8 @@ class RedisService {
 
         this.client = createClient({
           url: config.redis.url,
-          username: config.redis.username,
-          password: config.redis.password,
+          ...(config.redis.username && { username: config.redis.username }),
+          ...(config.redis.password && { password: config.redis.password }),
         });
 
         await this.client.connect();

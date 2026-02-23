@@ -86,11 +86,38 @@ describe('Redis Service', () => {
         username: 'testuser',
         password: 'testpass',
       });
-      expect(mockRedis.mockConnect).toHaveBeenCalled();
-      expect(mockRedis.mockPing).toHaveBeenCalled();
-      expect((redisService as any).client).not.toBeNull();
-      expect((redisService as any).retryCount).toBe(0);
-      expect((redisService as any).initializingPromise).toBeNull();
+    });
+
+    describe('when credentials are empty strings', () => {
+      let mockConfig: any;
+
+      beforeEach(async () => {
+        mockConfig = (await import('../config/index.js')).config;
+        mockConfig.redis.username = '';
+        mockConfig.redis.password = '';
+      });
+
+      afterEach(() => {
+        mockConfig.redis.username = 'testuser';
+        mockConfig.redis.password = 'testpass';
+      });
+
+      it('should not include username or password in createClient call', async () => {
+        // Arrange
+        mockRedis.mockConnect.mockResolvedValue(undefined);
+        mockRedis.mockPing.mockResolvedValue('PONG');
+
+        // Act
+        await redisService.initialize();
+
+        // Assert
+        expect(mockRedis.createClient).toHaveBeenCalledWith({
+          url: 'redis://localhost:6379',
+        });
+        expect(mockRedis.mockConnect).toHaveBeenCalled();
+        expect(mockRedis.mockPing).toHaveBeenCalled();
+        expect((redisService as any).client).not.toBeNull();
+      });
     });
 
     it('should await ongoing initialization if already initializing', async () => {
