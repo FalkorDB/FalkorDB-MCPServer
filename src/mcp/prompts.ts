@@ -1,6 +1,17 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
+// Extract Zod schemas to break type recursion cycle
+const userSetupArgsSchema = {
+  name: z.string().describe("The name of the user"),
+} as const;
+
+const memoryQueryArgsSchema = {
+  query: z.string().describe("The query or topic to search for in memory"),
+  context: z.string().optional().describe("Additional context to help scope the search"),
+  relationship_depth: z.coerce.number().min(1).max(3).describe("How many relationship hops to traverse (1-3)")
+} as const;
+
 function registerUserSetupPrompt(server: McpServer): void {
   // Register user_setup prompt
   server.registerPrompt(
@@ -8,9 +19,7 @@ function registerUserSetupPrompt(server: McpServer): void {
     {
       title: "User Setup",
       description: "Setup the user graph node and connect it to the rest of the relevant nodes",
-      argsSchema: {
-        name: z.string().describe("The name of the user"),
-      }
+      argsSchema: userSetupArgsSchema,
     },
     async ({name}) => {
       const userMessage = `# User Setup Task
@@ -55,17 +64,12 @@ Please proceed with setting up the user "${name}" in the memory graph.`
 }
 
 function registerMemoryQueryPrompt(server: McpServer): void {
-  // @ts-expect-error TS2589 - MCP SDK registerPrompt type inference exceeds recursion limit
   server.registerPrompt(
     "memory_query",
     {
       title: "Memory Query",
       description: "Query the memory graph to retrieve and analyze stored information",
-      argsSchema: {
-        query: z.string().describe("The query or topic to search for in memory"),
-        context: z.string().optional().describe("Additional context to help scope the search"),
-        relationship_depth: z.coerce.number().min(1).max(3).describe("How many relationship hops to traverse (1-3)")
-      }
+      argsSchema: memoryQueryArgsSchema,
     },
     async ({query, context, relationship_depth}) => {
       const memoryMessage = `# Memory Query Task
