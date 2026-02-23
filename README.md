@@ -246,6 +246,21 @@ When using HTTP transport, clients connect by sending a POST request with an `in
 
 > **Note:** `npm run inspect` uses stdio transport. For HTTP, start the server and inspector separately as shown above.
 
+**API Key Authentication:**
+
+When `MCP_API_KEY` is set, all HTTP requests must include an `Authorization` header:
+
+```bash
+MCP_TRANSPORT=http MCP_API_KEY=my-secret-key npm start
+```
+
+Clients must then send:
+```text
+Authorization: Bearer my-secret-key
+```
+
+Requests without a valid key receive a `401 Unauthorized` response. Auth is only enforced in HTTP mode — stdio mode ignores `MCP_API_KEY` since only the parent process can communicate.
+
 ### Using with Remote FalkorDB
 
 For cloud-hosted FalkorDB instances:
