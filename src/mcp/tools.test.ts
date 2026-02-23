@@ -20,16 +20,6 @@ jest.mock('../services/falkordb.service.js', () => ({
   }
 }));
 
-// Mock the Redis service
-jest.mock('../services/redis.service.js', () => ({
-  redisService: {
-    set: jest.fn(),
-    get: jest.fn(),
-    delete: jest.fn(),
-    listKeys: jest.fn(),
-  }
-}));
-
 // Mock config with different scenarios
 let mockConfig = {
   falkorDB: {
