@@ -117,6 +117,10 @@ Add to `claude_desktop_config.json`:
 ## CI/CD
 - Tests run against a `falkordb/falkordb:edge` Docker service
 - Build and lint checks validate TypeScript compilation and code style
+- Docker images are automatically published to `falkordb/mcpserver`:
+  - `edge` tag: published on every push to `main`
+  - `x.y.z` and `latest` tags: published when a version tag is pushed or release is published
+  - Multi-platform builds: `linux/amd64`, `linux/arm64`
 
 ## Before Finishing a Task
 After completing any task, review whether your changes require updates to:
