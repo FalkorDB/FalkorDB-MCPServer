@@ -2,6 +2,18 @@ import { AppError } from './AppError.js';
 import { logger } from '../services/logger.service.js';
 
 /**
+ * MCP tool result format for errors
+ */
+export interface McpErrorResult {
+  [x: string]: unknown;
+  content: Array<{
+    type: "text";
+    text: string;
+  }>;
+  isError: true;
+}
+
+/**
  * Centralized error handler following Node.js best practices for MCP servers
  * Handles logging, monitoring, and determining crash behavior
  */
@@ -44,6 +56,71 @@ export class ErrorHandler {
       logger.errorSync('Crashing process due to untrusted error', error);
       process.exit(1);
     }
+  }
+
+  /**
+   * Converts an error into a sanitized MCP tool result
+   * Removes sensitive information like stack traces, connection details, and internal paths
+   * @param error - The error to convert
+   * @returns A sanitized MCP error result
+   */
+  public toMcpErrorResult(error: unknown): McpErrorResult {
+    let errorMessage: string;
+
+    if (error instanceof AppError) {
+      // Use the AppError message which should already be user-safe
+      errorMessage = error.message;
+    } else if (error instanceof Error) {
+      // Sanitize generic error messages
+      errorMessage = this.sanitizeErrorMessage(error.message);
+    } else {
+      // Handle non-Error objects
+      errorMessage = 'An unexpected error occurred';
+    }
+
+    return {
+      content: [{
+        type: "text",
+        text: `Error: ${errorMessage}`
+      }],
+      isError: true
+    };
+  }
+
+  /**
+   * Sanitizes error messages by removing sensitive information
+   * @param message - The error message to sanitize
+   * @returns A sanitized error message
+   */
+  private sanitizeErrorMessage(message: string): string {
+    if (!message) {
+      return 'An error occurred';
+    }
+
+    // Remove stack traces (lines starting with "at ")
+    const lines = message.split('\n');
+    const sanitizedLines = lines.filter(line => !line.trim().startsWith('at '));
+    let sanitized = sanitizedLines.join('\n').trim();
+
+    // Remove connection strings with credentials (must be done before path removal)
+    sanitized = sanitized.replace(/redis:\/\/[^@\s]+@[^\s]+/gi, 'redis://<credentials>@<host>');
+    sanitized = sanitized.replace(/mongodb:\/\/[^@\s]+@[^\s]+/gi, 'mongodb://<credentials>@<host>');
+    sanitized = sanitized.replace(/postgresql:\/\/[^@\s]+@[^\s]+/gi, 'postgresql://<credentials>@<host>');
+
+    // Remove potential password/token patterns (more specific to capture full values)
+    sanitized = sanitized.replace(/password[=:]\s*(\S+)/gi, 'password=<redacted>');
+    sanitized = sanitized.replace(/\btoken[=:]\s*(\S+)/gi, 'token=<redacted>');
+    sanitized = sanitized.replace(/api[_-]?key[=:]\s*(\S+)/gi, 'apikey=<redacted>');
+
+    // Remove IP addresses and ports
+    sanitized = sanitized.replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+\b/g, '<host>:<port>');
+    sanitized = sanitized.replace(/\blocalhost:\d+\b/g, 'localhost:<port>');
+
+    // Remove file paths (absolute paths) - use negative lookahead to avoid matching :// URLs
+    sanitized = sanitized.replace(/(?<!:)\/[\w\-./]+/g, '<path>');
+    sanitized = sanitized.replace(/\b[A-Z]:\\[\w\-\\]+/g, '<path>');
+
+    return sanitized || 'An error occurred';
   }
 }
 

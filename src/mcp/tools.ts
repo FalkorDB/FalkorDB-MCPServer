@@ -5,6 +5,7 @@ import { redisService } from '../services/redis.service.js';
 import { logger } from '../services/logger.service.js';
 import { AppError, CommonErrors } from '../errors/AppError.js';
 import { config } from '../config/index.js';
+import { errorHandler } from '../errors/ErrorHandler.js';
 
 function registerQueryGraphTool(server: McpServer): void {
   // @ts-expect-error TS2589 - MCP SDK registerTool type inference exceeds recursion limit
@@ -28,7 +29,7 @@ function registerQueryGraphTool(server: McpServer): void {
             true
           );
         }
-        
+
         if (!query?.trim()) {
           throw new AppError(
             CommonErrors.INVALID_INPUT,
@@ -36,13 +37,13 @@ function registerQueryGraphTool(server: McpServer): void {
             true
           );
         }
-        
+
         // Use the provided readOnly flag, or fall back to the default from config
         const isReadOnly = readOnly !== undefined ? readOnly : config.falkorDB.defaultReadOnly;
-        
+
         const result = await falkorDBService.executeQuery(graphName, query, undefined, isReadOnly);
         await logger.debug('Query tool executed successfully', { graphName, readOnly: isReadOnly });
-        
+
         return {
           content: [{
             type: "text",
@@ -51,7 +52,7 @@ function registerQueryGraphTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Query tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, query: query.substring(0, 100) + (query.length > 100 ? '...' : '') });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   )
@@ -77,7 +78,7 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
             true
           );
         }
-        
+
         if (!query?.trim()) {
           throw new AppError(
             CommonErrors.INVALID_INPUT,
@@ -85,10 +86,10 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
             true
           );
         }
-        
+
         const result = await falkorDBService.executeReadOnlyQuery(graphName, query);
         await logger.debug('Read-only query tool executed successfully', { graphName });
-        
+
         return {
           content: [{
             type: "text",
@@ -97,7 +98,7 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Read-only query tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, query: query.substring(0, 100) + (query.length > 100 ? '...' : '') });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   )
@@ -116,7 +117,7 @@ function registerListGraphsTool(server: McpServer): void {
       try {
         const result = await falkorDBService.listGraphs();
         await logger.debug('List graphs tool executed', { count: result.length });
-        
+
         return {
           content: [{
             type: "text",
@@ -125,7 +126,7 @@ function registerListGraphsTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('List graphs tool execution failed', error instanceof Error ? error : new Error(String(error)));
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   );
@@ -152,10 +153,10 @@ function registerDeleteGraphTool(server: McpServer): void {
             true
           );
         }
-        
+
         await falkorDBService.deleteGraph(graphName);
         await logger.info('Delete graph tool executed successfully', { graphName });
-        
+
         return {
           content: [{
             type: "text",
@@ -164,7 +165,7 @@ function registerDeleteGraphTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Delete graph tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   );
@@ -182,7 +183,7 @@ function registerListKeysTool(server: McpServer): void {
       try {
         const keys = await redisService.listKeys();
         await logger.debug('List keys tool executed', { count: keys.length });
-        
+
         return {
           content: [{
             type: "text",
@@ -191,7 +192,7 @@ function registerListKeysTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('List keys tool execution failed', error instanceof Error ? error : new Error(String(error)));
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   );
@@ -218,7 +219,7 @@ function registerSetKeyTool(server: McpServer): void {
             true
           );
         }
-        
+
         if (value === undefined || value === null) {
           throw new AppError(
             CommonErrors.INVALID_INPUT,
@@ -226,7 +227,7 @@ function registerSetKeyTool(server: McpServer): void {
             true
           );
         }
-        
+
         await redisService.set(key, value);
         await logger.debug('Set key tool executed successfully', { key });
 
@@ -238,7 +239,7 @@ function registerSetKeyTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Set key tool execution failed', error instanceof Error ? error : new Error(String(error)), { key });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   );
@@ -264,10 +265,10 @@ function registerGetKeyTool(server: McpServer): void {
             true
           );
         }
-        
+
         const value = await redisService.get(key);
         await logger.debug('Get key tool executed successfully', { key, hasValue: value !== null });
-        
+
         return {
           content: [{
             type: "text",
@@ -276,7 +277,7 @@ function registerGetKeyTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Get key tool execution failed', error instanceof Error ? error : new Error(String(error)), { key });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   );
@@ -314,7 +315,7 @@ function registerDeleteKeyTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Delete key tool execution failed', error instanceof Error ? error : new Error(String(error)), { key });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   )
