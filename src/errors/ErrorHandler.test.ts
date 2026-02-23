@@ -230,4 +230,254 @@ describe('ErrorHandler', () => {
       expect(errorHandler).toBe(errorHandler); // Same instance
     });
   });
+
+  describe('toMcpErrorResult', () => {
+    it('should return sanitized error result for AppError', () => {
+      // Arrange
+      const appError = new AppError(
+        CommonErrors.OPERATION_FAILED,
+        'Query failed on graph test',
+        true
+      );
+
+      // Act
+      const result = handler.toMcpErrorResult(appError);
+
+      // Assert
+      expect(result).toEqual({
+        content: [{
+          type: "text",
+          text: "Error: Query failed on graph test"
+        }],
+        isError: true
+      });
+    });
+
+    it('should sanitize stack traces from generic errors', () => {
+      // Arrange
+      const error = new Error('Database error\n    at Connection.query (/app/src/db.js:123:45)\n    at async Handler.execute (/app/src/handler.js:67:89)');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toBe('Error: Database error');
+      expect(result.content[0].text).not.toContain('at Connection.query');
+      expect(result.content[0].text).not.toContain('/app/src/db.js');
+    });
+
+    it('should sanitize file paths from error messages', () => {
+      // Arrange
+      const error = new Error('Failed to read /home/user/config/database.yml');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toContain('<path>');
+      expect(result.content[0].text).not.toContain('/home/user/config/database.yml');
+    });
+
+    it('should sanitize Redis connection strings with credentials', () => {
+      // Arrange
+      const error = new Error('Connection failed to redis://admin:secret123@localhost:6379');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toContain('redis://<credentials>@<host>');
+      expect(result.content[0].text).not.toContain('admin');
+      expect(result.content[0].text).not.toContain('secret123');
+    });
+
+    it('should sanitize MongoDB connection strings with credentials', () => {
+      // Arrange
+      const error = new Error('Connection failed to mongodb://user:pass@example.com:27017/db');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toContain('mongodb://<credentials>@<host>');
+      expect(result.content[0].text).not.toContain('user:pass');
+    });
+
+    it('should sanitize falkordb connection strings with credentials', () => {
+      // Arrange
+      const error = new Error('Connection failed to falkordb://admin:secret@localhost:6379');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toContain('falkordb://<credentials>@<host>');
+      expect(result.content[0].text).not.toContain('admin:secret');
+    });
+
+    it('should sanitize connection strings without credentials to hide network topology', () => {
+      // Arrange
+      const error = new Error('Could not connect to redis://internal-cache-server:6379/0');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toContain('redis://<host>');
+      expect(result.content[0].text).not.toContain('internal-cache-server');
+    });
+
+    it('should sanitize falkordb connection strings without credentials', () => {
+      // Arrange
+      const error = new Error('Failed to connect to falkordb://prod-db.internal:6379');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toContain('falkordb://<host>');
+      expect(result.content[0].text).not.toContain('prod-db.internal');
+    });
+
+    it('should sanitize IP addresses and ports', () => {
+      // Arrange
+      const error = new Error('Connection refused to 192.168.1.100:6379');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toContain('<host>:<port>');
+      expect(result.content[0].text).not.toContain('192.168.1.100:6379');
+    });
+
+    it('should sanitize localhost with port', () => {
+      // Arrange
+      const error = new Error('Failed to connect to localhost:3000');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toContain('localhost:<port>');
+      expect(result.content[0].text).not.toContain('localhost:3000');
+    });
+
+    it('should sanitize password fields', () => {
+      // Arrange
+      const error = new Error('Authentication failed with password=mySecretPassword123');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toContain('password=<redacted>');
+      expect(result.content[0].text).not.toContain('mySecretPassword123');
+    });
+
+    it('should sanitize token fields', () => {
+      // Arrange
+      const error = new Error('Invalid token=abc123xyz456');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toContain('token=<redacted>');
+      expect(result.content[0].text).not.toContain('abc123xyz456');
+    });
+
+    it('should sanitize API key fields', () => {
+      // Arrange
+      const error = new Error('Request failed with api_key=sk-1234567890abcdef');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toContain('apikey=<redacted>');
+      expect(result.content[0].text).not.toContain('sk-1234567890abcdef');
+    });
+
+    it('should handle non-Error objects', () => {
+      // Arrange
+      const nonError = { message: 'Something went wrong' };
+
+      // Act
+      const result = handler.toMcpErrorResult(nonError);
+
+      // Assert
+      expect(result).toEqual({
+        content: [{
+          type: "text",
+          text: "Error: An unexpected error occurred"
+        }],
+        isError: true
+      });
+    });
+
+    it('should handle errors with empty messages', () => {
+      // Arrange
+      const error = new Error('');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result).toEqual({
+        content: [{
+          type: "text",
+          text: "Error: An error occurred"
+        }],
+        isError: true
+      });
+    });
+
+    it('should handle null and undefined', () => {
+      // Act
+      const nullResult = handler.toMcpErrorResult(null);
+      const undefinedResult = handler.toMcpErrorResult(undefined);
+
+      // Assert
+      expect(nullResult).toEqual({
+        content: [{
+          type: "text",
+          text: "Error: An unexpected error occurred"
+        }],
+        isError: true
+      });
+      expect(undefinedResult).toEqual({
+        content: [{
+          type: "text",
+          text: "Error: An unexpected error occurred"
+        }],
+        isError: true
+      });
+    });
+
+    it('should handle complex error messages with multiple sensitive patterns', () => {
+      // Arrange
+      const error = new Error(
+        'Connection to redis://admin:secret@192.168.1.100:6379 failed\n' +
+        '    at /home/app/src/db.ts:45\n' +
+        '    at async connect (/home/app/index.js:12)\n' +
+        'Using password=myPass and api-key=sk-123'
+      );
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      const text = result.content[0].text;
+      expect(text).toContain('redis://<credentials>@<host>');
+      expect(text).toContain('password=<redacted>');
+      expect(text).toContain('apikey=<redacted>');
+      expect(text).not.toContain('admin:secret');
+      expect(text).not.toContain('192.168.1.100');
+      expect(text).not.toContain('/home/app');
+      expect(text).not.toContain('at /home');
+      expect(text).not.toContain('myPass');
+      expect(text).not.toContain('sk-123');
+    });
+  });
 });

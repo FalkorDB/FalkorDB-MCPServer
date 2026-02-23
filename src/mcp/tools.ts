@@ -4,6 +4,7 @@ import { falkorDBService } from '../services/falkordb.service.js';
 import { logger } from '../services/logger.service.js';
 import { AppError, CommonErrors } from '../errors/AppError.js';
 import { config } from '../config/index.js';
+import { errorHandler } from '../errors/ErrorHandler.js';
 
 // Define schemas as simple objects first to avoid TS2589 deep recursion
 const queryGraphSchema = {
@@ -42,7 +43,7 @@ function registerQueryGraphTool(server: McpServer): void {
             true
           );
         }
-        
+
         if (!query?.trim()) {
           throw new AppError(
             CommonErrors.INVALID_INPUT,
@@ -50,13 +51,13 @@ function registerQueryGraphTool(server: McpServer): void {
             true
           );
         }
-        
+
         // Use the provided readOnly flag, or fall back to the default from config
         const isReadOnly = readOnly !== undefined ? readOnly : config.falkorDB.defaultReadOnly;
-        
+
         const result = await falkorDBService.executeQuery(graphName, query, undefined, isReadOnly);
         await logger.debug('Query tool executed successfully', { graphName, readOnly: isReadOnly });
-        
+
         return {
           content: [{
             type: "text" as const,
@@ -65,7 +66,7 @@ function registerQueryGraphTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Query tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, query: query.substring(0, 100) + (query.length > 100 ? '...' : '') });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   )
@@ -89,7 +90,7 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
             true
           );
         }
-        
+
         if (!query?.trim()) {
           throw new AppError(
             CommonErrors.INVALID_INPUT,
@@ -97,10 +98,10 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
             true
           );
         }
-        
+
         const result = await falkorDBService.executeReadOnlyQuery(graphName, query);
         await logger.debug('Read-only query tool executed successfully', { graphName });
-        
+
         return {
           content: [{
             type: "text" as const,
@@ -109,7 +110,7 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Read-only query tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, query: query.substring(0, 100) + (query.length > 100 ? '...' : '') });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   )
@@ -128,7 +129,7 @@ function registerListGraphsTool(server: McpServer): void {
       try {
         const result = await falkorDBService.listGraphs();
         await logger.debug('List graphs tool executed', { count: result.length });
-        
+
         return {
           content: [{
             type: "text" as const,
@@ -137,7 +138,7 @@ function registerListGraphsTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('List graphs tool execution failed', error instanceof Error ? error : new Error(String(error)));
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   );
@@ -162,10 +163,10 @@ function registerDeleteGraphTool(server: McpServer): void {
             true
           );
         }
-        
+
         await falkorDBService.deleteGraph(graphName);
         await logger.info('Delete graph tool executed successfully', { graphName });
-        
+
         return {
           content: [{
             type: "text" as const,
@@ -174,11 +175,12 @@ function registerDeleteGraphTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Delete graph tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   );
 }
+
 
 export default function registerAllTools(server: McpServer): void {
   // Register query_graph tools
