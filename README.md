@@ -87,7 +87,15 @@ Run FalkorDB and the MCP server together:
 docker compose up -d
 ```
 
-This starts FalkorDB with health checks and persistent volumes, plus the MCP server pre-configured to connect to it. See `docker-compose.yml` for details.
+This starts FalkorDB with health checks and persistent volumes, plus the MCP server pre-configured to connect to it.
+
+The MCP server runs in **HTTP transport** mode and is exposed on `localhost:3000` by default. To connect a client, configure it to use:
+
+- **Transport:** `http`
+- **URL:** `http://localhost:3000`
+- **API Key:** Set via the `MCP_API_KEY` environment variable (optional)
+
+See `docker-compose.yml` for the exact port and configuration values.
 
 ### Installation
 

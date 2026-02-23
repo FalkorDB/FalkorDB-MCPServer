@@ -1,7 +1,6 @@
 services:
   falkordb:
     image: falkordb/falkordb:latest
-    container_name: falkordb
     ports:
       - "6379:6379"
     volumes:
@@ -16,12 +15,11 @@ services:
 
   falkordb-mcpserver:
     build: .
-    container_name: falkordb-mcpserver
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - MCP_TRANSPORT=${MCP_TRANSPORT:-stdio}
+      - MCP_TRANSPORT=${MCP_TRANSPORT:-http}
       - MCP_PORT=3000
       - MCP_API_KEY=${MCP_API_KEY:-}
       - FALKORDB_HOST=falkordb
