@@ -18,6 +18,11 @@ class FalkorDBService {
   }
 
   async initialize(): Promise<void> {
+    // Idempotency guard: skip if already connected
+    if (this.client) {
+      return;
+    }
+
     if (this.initializingPromise) {
       return this.initializingPromise;
     }
@@ -33,58 +38,63 @@ class FalkorDBService {
   }
 
   private async _initialize(): Promise<void> {
-    try {
-      logger.info('Attempting to connect to FalkorDB', {
-        host: config.falkorDB.host,
-        port: config.falkorDB.port,
-        attempt: this.retryCount + 1
-      });
-
-      this.client = await FalkorDB.connect({
-        socket: {
+    for (;; this.retryCount++) {
+      try {
+        // Fire-and-forget: informational log, not critical
+        logger.info('Attempting to connect to FalkorDB', {
           host: config.falkorDB.host,
           port: config.falkorDB.port,
-        },
-        password: config.falkorDB.password,
-        username: config.falkorDB.username,
-      });
-
-      // Test connection
-      const connection = await this.client.connection;
-      await connection.ping();
-
-      logger.info('Successfully connected to FalkorDB');
-      this.retryCount = 0;
-    } catch (error) {
-      // Clean up any partially connected client before retrying or throwing
-      if (this.client) {
-        try {
-          await this.client.close();
-        } catch {
-          // Ignore cleanup errors
-        }
-        this.client = null;
-      }
-      
-      if (this.retryCount < this.maxRetries) {
-        this.retryCount++;
-        logger.warn('Failed to connect to FalkorDB, retrying...', {
-          attempt: this.retryCount,
-          maxRetries: this.maxRetries,
-          error: error instanceof Error ? error.message : String(error)
+          attempt: this.retryCount + 1
         });
 
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        return this._initialize();
-      } else {
-        const appError = new AppError(
-          CommonErrors.CONNECTION_FAILED,
-          `Failed to connect to FalkorDB after ${this.maxRetries} attempts: ${error instanceof Error ? error.message : String(error)}`,
-          true
-        );
+        this.client = await FalkorDB.connect({
+          socket: {
+            host: config.falkorDB.host,
+            port: config.falkorDB.port,
+          },
+          password: config.falkorDB.password,
+          username: config.falkorDB.username,
+        });
+
+        // Test connection
+        const connection = await this.client.connection;
+        await connection.ping();
+
+        // Fire-and-forget: informational log, not critical
+        logger.info('Successfully connected to FalkorDB');
+        this.retryCount = 0;
+        return;
+      } catch (error) {
+        // Clean up any partially connected client before retrying or throwing
+        if (this.client) {
+          try {
+            await this.client.close();
+          } catch {
+            // Ignore cleanup errors
+          }
+          this.client = null;
+        }
         
-        logger.error('FalkorDB connection failed permanently', appError);
-        throw appError;
+        if (this.retryCount < this.maxRetries) {
+          // Fire-and-forget: informational log before retry delay
+          logger.warn('Failed to connect to FalkorDB, retrying...', {
+            attempt: this.retryCount + 1,
+            maxRetries: this.maxRetries,
+            error: error instanceof Error ? error.message : String(error)
+          });
+
+          const delay = Math.min(5000 * 2 ** this.retryCount, 30000) + Math.random() * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          const appError = new AppError(
+            CommonErrors.CONNECTION_FAILED,
+            `Failed to connect to FalkorDB after ${this.maxRetries} attempts: ${error instanceof Error ? error.message : String(error)}`,
+            true
+          );
+          
+          await logger.error('FalkorDB connection failed permanently', appError);
+          throw appError;
+        }
       }
     }
   }
@@ -104,6 +114,7 @@ class FalkorDBService {
         ? await graph.roQuery(query, params)
         : await graph.query(query, params);
       
+      // Fire-and-forget: informational log, not critical
       logger.debug('Query executed successfully', {
         graphName,
         query: query.substring(0, 100) + (query.length > 100 ? '...' : ''),
@@ -121,7 +132,7 @@ class FalkorDBService {
 
       // Sanitize query for error logging using same truncation as debug logs
       const safeQuery = query.substring(0, 100) + (query.length > 100 ? '...' : '');
-      logger.error('Query execution failed', appError, { graphName, query: safeQuery, readOnly });
+      await logger.error('Query execution failed', appError, { graphName, query: safeQuery, readOnly });
       throw appError;
     }
   }
@@ -153,6 +164,7 @@ class FalkorDBService {
 
     try {
       const graphs = await this.client.list();
+      // Fire-and-forget: informational log, not critical
       logger.debug('Listed graphs successfully', { count: graphs.length });
       return graphs;
     } catch (error) {
@@ -162,7 +174,7 @@ class FalkorDBService {
         true
       );
       
-      logger.error('Failed to list graphs', appError);
+      await logger.error('Failed to list graphs', appError);
       throw appError;
     }
   }
@@ -178,6 +190,7 @@ class FalkorDBService {
 
     try {
       await this.client.selectGraph(graphName).delete();
+      // Fire-and-forget: informational log, not critical
       logger.info('Graph deleted successfully', { graphName });
     } catch (error) {
       const appError = new AppError(
@@ -186,7 +199,7 @@ class FalkorDBService {
         true
       );
       
-      logger.error('Failed to delete graph', appError, { graphName });
+      await logger.error('Failed to delete graph', appError, { graphName });
       throw appError;
     }
   }
@@ -195,8 +208,10 @@ class FalkorDBService {
     if (this.client) {
       try {
         await this.client.close();
+        // Fire-and-forget: informational log, not critical
         logger.info('FalkorDB connection closed successfully');
       } catch (error) {
+        // Fire-and-forget: best-effort log during shutdown
         logger.error('Error closing FalkorDB connection', error instanceof Error ? error : new Error(String(error)));
       } finally {
         this.client = null;
