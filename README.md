@@ -279,7 +279,7 @@ docker run -p 3000:3000 \
   falkordb-mcpserver
 ```
 
-Or use with `docker-compose` alongside FalkorDB:
+Or use with `docker-compose` alongside FalkorDB (a complete `docker-compose.yml` is included in the repository root):
 
 ```yaml
 services:
