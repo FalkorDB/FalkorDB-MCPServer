@@ -59,6 +59,13 @@ export class Logger {
     this.mcpServers.delete(server);
   }
 
+  /**
+   * Remove all registered MCP servers (for testing purposes)
+   */
+  public clearMcpServers(): void {
+    this.mcpServers.clear();
+  }
+
   private formatLog(level: string, message: string, context?: LogContext): string {
     const logEntry = {
       timestamp: new Date().toISOString(),
