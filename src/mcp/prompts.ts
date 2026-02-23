@@ -64,7 +64,7 @@ const memoryQueryArgsSchema = {
 };
 
 function registerMemoryQueryPrompt(server: McpServer): void {
-  // @ts-ignore - Bypass TS2589 type inference recursion limit
+  // @ts-expect-error TS2589 - MCP SDK registerPrompt type inference exceeds recursion limit
   server.registerPrompt(
     "memory_query",
     {

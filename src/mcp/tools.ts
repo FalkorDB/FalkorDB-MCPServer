@@ -14,7 +14,7 @@ const queryGraphInputSchema = {
 };
 
 function registerQueryGraphTool(server: McpServer): void {
-  // @ts-ignore - Bypass TS2589 type inference recursion limit
+  // @ts-expect-error TS2589 - MCP SDK registerTool type inference exceeds recursion limit
   server.registerTool(
     "query_graph",
     {
@@ -108,7 +108,7 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
   )
 }
 
-const listGraphsInputSchema = {};
+const listGraphsInputSchema: Record<string, never> = {};
 
 function registerListGraphsTool(server: McpServer): void {
   // Register list_graphs tool
@@ -179,7 +179,7 @@ function registerDeleteGraphTool(server: McpServer): void {
   );
 }
 
-const listKeysInputSchema = {};
+const listKeysInputSchema: Record<string, never> = {};
 
 function registerListKeysTool(server: McpServer): void {
   server.registerTool(
