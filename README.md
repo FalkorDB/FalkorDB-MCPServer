@@ -232,6 +232,20 @@ MCP_API_KEY=your-secret-api-key  # Optional but recommended
 
 When using HTTP transport, clients connect by sending a POST request with an `initialize` message. The server returns an `Mcp-Session-Id` header that must be included in subsequent requests. API key authentication is enforced via the `Authorization: Bearer <key>` header when `MCP_API_KEY` is set.
 
+**Testing HTTP transport:**
+
+1. Start the server:
+   ```bash
+   MCP_TRANSPORT=http MCP_PORT=3000 npm start
+   ```
+
+2. Use the MCP Inspector to connect:
+   ```bash
+   npx @modelcontextprotocol/inspector --transport streamable-http --url http://localhost:3000
+   ```
+
+> **Note:** `npm run inspect` uses stdio transport. For HTTP, start the server and inspector separately as shown above.
+
 ### Using with Remote FalkorDB
 
 For cloud-hosted FalkorDB instances:
