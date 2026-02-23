@@ -261,6 +261,42 @@ Authorization: Bearer my-secret-key
 
 Requests without a valid key receive a `401 Unauthorized` response. Auth is only enforced in HTTP mode — stdio mode ignores `MCP_API_KEY` since only the parent process can communicate.
 
+### Using with Docker
+
+Build and run the MCP server in a Docker container (defaults to HTTP transport):
+
+```bash
+docker build -t falkordb-mcpserver .
+docker run -p 3000:3000 \
+  -e FALKORDB_HOST=host.docker.internal \
+  -e FALKORDB_PORT=6379 \
+  -e MCP_API_KEY=your-secret-key \
+  falkordb-mcpserver
+```
+
+Or use with `docker-compose` alongside FalkorDB:
+
+```yaml
+services:
+  falkordb:
+    image: falkordb/falkordb:latest
+    ports:
+      - "6379:6379"
+
+  mcp-server:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - FALKORDB_HOST=falkordb
+      - FALKORDB_PORT=6379
+      - MCP_TRANSPORT=http
+      - MCP_PORT=3000
+      - MCP_API_KEY=your-secret-key
+    depends_on:
+      - falkordb
+```
+
 ### Using with Remote FalkorDB
 
 For cloud-hosted FalkorDB instances:
