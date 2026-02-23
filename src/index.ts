@@ -63,7 +63,7 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Create an MCP server
 const server = new McpServer({
-  name: "falkordb-mcpserver",
+  name: "falkordb",
   version: version
 }, {
   capabilities: {
@@ -213,7 +213,7 @@ async function startHTTPServer(): Promise<void> {
 
 function createSessionServer(): McpServer {
   const sessionServer = new McpServer({
-    name: "falkordb-mcpserver",
+    name: "falkordb",
     version: version,
   }, {
     capabilities: {

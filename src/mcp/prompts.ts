@@ -1,9 +1,15 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-// Extract Zod schemas as standalone constants to prevent TS2589 errors
+// Define schemas as simple objects first to avoid TS2589 deep recursion
 const userSetupArgsSchema = {
   name: z.string().describe("The name of the user"),
+};
+
+const memoryQueryArgsSchema = {
+  query: z.string().describe("The query or topic to search for in memory"),
+  context: z.string().optional().describe("Additional context to help scope the search"),
+  relationship_depth: z.coerce.number().min(1).max(3).describe("How many relationship hops to traverse (1-3)")
 };
 
 function registerUserSetupPrompt(server: McpServer): void {
@@ -13,9 +19,10 @@ function registerUserSetupPrompt(server: McpServer): void {
     {
       title: "User Setup",
       description: "Setup the user graph node and connect it to the rest of the relevant nodes",
-      argsSchema: userSetupArgsSchema,
+      argsSchema: userSetupArgsSchema as any, // Cast to any to prevent TS2589 (deep recursion) during type inference
     },
-    async ({name}) => {
+    async (args: unknown) => {
+      const {name} = z.object(userSetupArgsSchema).parse(args);
       const userMessage = `# User Setup Task
 
 You are working with a FalkorDB graph database to manage user information and relationships. 
@@ -45,9 +52,9 @@ Please proceed with setting up the user "${name}" in the memory graph.`
       return {
         messages: [
           {
-            role: "user",
+            role: "user" as const,
             content: {
-              type: "text",
+              type: "text" as const,
               text: userMessage
             }
           }
@@ -57,22 +64,16 @@ Please proceed with setting up the user "${name}" in the memory graph.`
   )
 }
 
-const memoryQueryArgsSchema = {
-  query: z.string().describe("The query or topic to search for in memory"),
-  context: z.string().optional().describe("Additional context to help scope the search"),
-  relationship_depth: z.coerce.number().min(1).max(3).describe("How many relationship hops to traverse (1-3)")
-};
-
 function registerMemoryQueryPrompt(server: McpServer): void {
-  // @ts-expect-error TS2589 - MCP SDK registerPrompt type inference exceeds recursion limit
   server.registerPrompt(
     "memory_query",
     {
       title: "Memory Query",
       description: "Query the memory graph to retrieve and analyze stored information",
-      argsSchema: memoryQueryArgsSchema,
+      argsSchema: memoryQueryArgsSchema as any, // Cast to any to prevent TS2589 (deep recursion) during type inference
     },
-    async ({query, context, relationship_depth}) => {
+    async (args: unknown) => {
+      const {query, context, relationship_depth} = z.object(memoryQueryArgsSchema).parse(args);
       const memoryMessage = `# Memory Query Task
 
 You are working with a FalkorDB graph database to retrieve and analyze stored memory information.
@@ -125,9 +126,9 @@ Please proceed with querying the memory graph for information about "${query}".`
       return {
         messages: [
           {
-            role: "user",
+            role: "user" as const,
             content: {
-              type: "text",
+              type: "text" as const,
               text: memoryMessage
             }
           }
@@ -230,9 +231,9 @@ Begin with analyzing the current graph structure and proceed with the reorganiza
       return {
         messages: [
           {
-            role: "user",
+            role: "user" as const,
             content: {
-              type: "text",
+              type: "text" as const,
               text: reorganizationMessage
             }
           }

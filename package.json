@@ -1,6 +1,6 @@
 {
-  "name": "falkordb-mcpserver",
-  "version": "1.0.1",
+  "name": "@falkordb/mcpserver",
+  "version": "1.1.0",
   "description": "Model Context Protocol server for FalkorDB graph databases - enables AI assistants to query and manage graph data using natural language",
   "main": "dist/index.js",
   "type": "module",
@@ -10,12 +10,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SecKatie/falkordb-mcpserver.git"
+    "url": "git+https://github.com/FalkorDB/FalkorDB-MCPServer.git"
   },
   "bugs": {
-    "url": "https://github.com/SecKatie/falkordb-mcpserver/issues"
+    "url": "https://github.com/FalkorDB/FalkorDB-MCPServer/issues"
   },
-  "homepage": "https://github.com/SecKatie/falkordb-mcpserver#readme",
+  "homepage": "https://github.com/FalkorDB/FalkorDB-MCPServer#readme",
   "author": {
     "name": "Katie Mulliken",
     "email": "katie@mulliken.net",
