@@ -162,13 +162,16 @@ async function startHTTPServer(): Promise<void> {
           sessionIdGenerator: () => randomUUID(),
         });
 
+        // Connect a fresh McpServer for this session
+        const sessionServer = createSessionServer();
+
         transport.onclose = () => {
           const sid = transport.sessionId;
           if (sid) sessions.delete(sid);
+          // Remove server from logger to prevent memory leaks and cross-talk
+          logger.removeMcpServer(sessionServer);
         };
 
-        // Connect a fresh McpServer for this session
-        const sessionServer = createSessionServer();
         await sessionServer.connect(transport);
         await transport.handleRequest(req, res, parsedBody);
 
