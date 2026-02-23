@@ -53,8 +53,8 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 
 1. **Clone and install:**
    ```bash
-   git clone https://github.com/SecKatie/falkordb-mcpserver.git
-   cd falkordb-mcpserver
+   git clone https://github.com/FalkorDB/FalkorDB-MCPServer.git
+   cd FalkorDB-MCPServer
    npm install
    ```
 
@@ -113,7 +113,7 @@ Restart Claude Desktop and you'll see the FalkorDB tools available!
 Once connected, you can ask Claude to:
 
 ### 🔍 Query Graphs
-```
+```text
 "Show me all people who know each other"
 "Find the shortest path between two nodes"
 "What relationships does John have?"
@@ -128,14 +128,14 @@ Once connected, you can ask Claude to:
 There's also a dedicated `query_graph_readonly` tool that always executes queries in read-only mode.
 
 ### 📝 Manage Data
-```
+```text
 "Create a new person named Alice who knows Bob"
 "Add a 'WORKS_AT' relationship between Alice and TechCorp"
 "Store my API key in the database"
 ```
 
 ### 📊 Explore Structure
-```
+```text
 "List all available graphs"
 "Show me the structure of the user_data graph"
 "Delete the old_test graph"
@@ -185,7 +185,7 @@ npm run prepublish
 
 ### Project Structure
 
-```
+```text
 src/
 ├── index.ts                   # MCP server entry point
 ├── services/                  # Core business logic

@@ -27,6 +27,11 @@ class RedisService {
   }
 
   async initialize(): Promise<void> {
+    // Idempotency guard: don't overwrite an already-connected client
+    if (this.client) {
+      return;
+    }
+
     if (this.initializingPromise) {
       return this.initializingPromise;
     }
@@ -42,53 +47,60 @@ class RedisService {
   }
 
   private async _initialize(): Promise<void> {
-    try {
-      logger.info('Attempting to connect to Redis', {
-        url: this.sanitizeUrl(config.redis.url),
-        attempt: this.retryCount + 1
-      });
-
-      this.client = createClient({
-        url: config.redis.url,
-        username: config.redis.username,
-        password: config.redis.password,
-      });
-
-      await this.client.connect();
-      await this.client.ping();
-
-      logger.info('Successfully connected to Redis');
-      this.retryCount = 0;
-    } catch (error) {
-      // Clean up failed client before retrying or throwing
-      if (this.client) {
-        try {
-          await this.client.disconnect();
-        } catch {
-          // Ignore disconnect errors
-        }
-        this.client = null;
-      }
-
-      if (this.retryCount < this.maxRetries) {
-        this.retryCount++;
-        logger.warn('Failed to connect to Redis, retrying...', {
-          attempt: this.retryCount,
-          maxRetries: this.maxRetries,
-          error: error instanceof Error ? error.message : String(error)
+    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      try {
+        // Fire-and-forget: non-critical connection attempt log
+        logger.info('Attempting to connect to Redis', {
+          url: this.sanitizeUrl(config.redis.url),
+          attempt: attempt + 1
         });
 
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        return this._initialize();
-      } else {
-        const appError = new AppError(
-          CommonErrors.CONNECTION_FAILED,
-          `Failed to connect to Redis after ${this.maxRetries} attempts: ${error instanceof Error ? error.message : String(error)}`,
-          true
-        );
+        this.client = createClient({
+          url: config.redis.url,
+          username: config.redis.username,
+          password: config.redis.password,
+        });
 
-        logger.error('Redis connection failed permanently', appError);
-        throw appError;
+        await this.client.connect();
+        await this.client.ping();
+
+        // Fire-and-forget: non-critical success log
+        logger.info('Successfully connected to Redis');
+        this.retryCount = 0;
+        return;
+      } catch (error) {
+        // Clean up failed client before retrying or throwing
+        if (this.client) {
+          try {
+            await this.client.disconnect();
+          } catch {
+            // Ignore disconnect errors
+          }
+          this.client = null;
+        }
+
+        if (attempt < this.maxRetries) {
+          this.retryCount = attempt + 1;
+          const delay = Math.min(5000 * 2 ** attempt, 30000) + Math.random() * 1000;
+          // Fire-and-forget: non-critical retry log
+          logger.warn('Failed to connect to Redis, retrying...', {
+            attempt: this.retryCount,
+            maxRetries: this.maxRetries,
+            nextRetryMs: Math.round(delay),
+            error: error instanceof Error ? error.message : String(error)
+          });
+
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          const appError = new AppError(
+            CommonErrors.CONNECTION_FAILED,
+            `Failed to connect to Redis after ${this.maxRetries} attempts: ${error instanceof Error ? error.message : String(error)}`,
+            true
+          );
+
+          await logger.error('Redis connection failed permanently', appError);
+          throw appError;
+        }
       }
     }
   }
@@ -113,7 +125,7 @@ class RedisService {
         true
       );
       
-      logger.error('Redis GET operation failed', appError, { key });
+      await logger.error('Redis GET operation failed', appError, { key });
       throw appError;
     }
   }
@@ -137,7 +149,7 @@ class RedisService {
         true
       );
       
-      logger.error('Redis SET operation failed', appError, { key });
+      await logger.error('Redis SET operation failed', appError, { key });
       throw appError;
     }
   }
@@ -161,7 +173,7 @@ class RedisService {
         true
       );
       
-      logger.error('Redis DEL operation failed', appError, { key });
+      await logger.error('Redis DEL operation failed', appError, { key });
       throw appError;
     }
   }
@@ -200,7 +212,7 @@ class RedisService {
         true
       );
 
-      logger.error('Redis KEYS operation failed', appError);
+      await logger.error('Redis KEYS operation failed', appError);
       throw appError;
     }
   }
@@ -211,6 +223,7 @@ class RedisService {
         await this.client.quit();
         logger.info('Redis connection closed successfully');
       } catch (error) {
+        // Fire-and-forget: best-effort log during cleanup
         logger.error('Error closing Redis connection', error instanceof Error ? error : new Error(String(error)));
       } finally {
         this.client = null;

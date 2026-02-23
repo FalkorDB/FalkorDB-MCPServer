@@ -250,4 +250,7 @@ function isInitializeRequest(body: unknown): boolean {
 }
 
 // Start the server
-startServer();
+startServer().catch(async (error) => {
+  await logger.error('Fatal startup error', error instanceof Error ? error : new Error(String(error)));
+  process.exit(1);
+});

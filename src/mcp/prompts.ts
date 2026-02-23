@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 function registerUserSetupPrompt(server: McpServer): void {
-  // Register graph_list resource
+  // Register user_setup prompt
   server.registerPrompt(
     "user_setup",
     {
