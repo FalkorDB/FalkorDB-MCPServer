@@ -211,6 +211,27 @@ describe('MCP Tools - Strict Read-Only Mode', () => {
         expect((error as AppError).message).toContain('FALKORDB_STRICT_READONLY=true');
       }
     });
+
+    it('should reject write queries when strictReadOnly is enabled and defaultReadOnly=false and readOnly is not specified', async () => {
+      // Override defaultReadOnly for this specific test case
+      mockConfig.falkorDB.defaultReadOnly = false;
+
+      await expect(
+        queryGraphHandler({
+          graphName: 'test',
+          query: 'CREATE (n:Test) RETURN n',
+        })
+      ).rejects.toThrow(AppError);
+
+      await expect(
+        queryGraphHandler({
+          graphName: 'test',
+          query: 'CREATE (n:Test) RETURN n',
+        })
+      ).rejects.toThrow('strict read-only mode');
+
+      expect(falkorDBService.executeQuery).not.toHaveBeenCalled();
+    });
   });
 
   describe('query_graph tool input validation', () => {

@@ -37,17 +37,17 @@ function registerQueryGraphTool(server: McpServer): void {
           );
         }
 
+        // Use the provided readOnly flag, or fall back to the default from config
+        const isReadOnly = readOnly !== undefined ? readOnly : config.falkorDB.defaultReadOnly;
+
         // Enforce strict read-only mode if enabled
-        if (config.falkorDB.strictReadOnly && readOnly === false) {
+        if (config.falkorDB.strictReadOnly && !isReadOnly) {
           throw new AppError(
             CommonErrors.INVALID_INPUT,
             'Cannot execute write queries: server is in strict read-only mode (FALKORDB_STRICT_READONLY=true)',
             true
           );
         }
-
-        // Use the provided readOnly flag, or fall back to the default from config
-        const isReadOnly = readOnly !== undefined ? readOnly : config.falkorDB.defaultReadOnly;
 
         const result = await falkorDBService.executeQuery(graphName, query, undefined, isReadOnly);
         await logger.debug('Query tool executed successfully', { graphName, readOnly: isReadOnly });
@@ -161,7 +161,16 @@ function registerDeleteGraphTool(server: McpServer): void {
             true
           );
         }
-        
+
+        // Enforce strict read-only mode if enabled
+        if (config.falkorDB.strictReadOnly) {
+          throw new AppError(
+            CommonErrors.INVALID_INPUT,
+            'Cannot delete graphs: server is in strict read-only mode (FALKORDB_STRICT_READONLY=true)',
+            true
+          );
+        }
+
         await falkorDBService.deleteGraph(graphName);
         await logger.info('Delete graph tool executed successfully', { graphName });
         
@@ -227,7 +236,7 @@ function registerSetKeyTool(server: McpServer): void {
             true
           );
         }
-        
+
         if (value === undefined || value === null) {
           throw new AppError(
             CommonErrors.INVALID_INPUT,
@@ -235,7 +244,16 @@ function registerSetKeyTool(server: McpServer): void {
             true
           );
         }
-        
+
+        // Enforce strict read-only mode if enabled
+        if (config.falkorDB.strictReadOnly) {
+          throw new AppError(
+            CommonErrors.INVALID_INPUT,
+            'Cannot modify keys: server is in strict read-only mode (FALKORDB_STRICT_READONLY=true)',
+            true
+          );
+        }
+
         await redisService.set(key, value);
         await logger.debug('Set key tool executed successfully', { key });
 
@@ -308,6 +326,15 @@ function registerDeleteKeyTool(server: McpServer): void {
           throw new AppError(
             CommonErrors.INVALID_INPUT,
             'Key is required and cannot be empty',
+            true
+          );
+        }
+
+        // Enforce strict read-only mode if enabled
+        if (config.falkorDB.strictReadOnly) {
+          throw new AppError(
+            CommonErrors.INVALID_INPUT,
+            'Cannot delete keys: server is in strict read-only mode (FALKORDB_STRICT_READONLY=true)',
             true
           );
         }
