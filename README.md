@@ -321,7 +321,7 @@ docker run -p 3000:3000 \
   falkordb-mcpserver
 ```
 
-Or use with `docker-compose` for HTTP transport alongside FalkorDB:
+Or use with `docker-compose` alongside FalkorDB:
 
 ```yaml
 services:
@@ -345,6 +345,7 @@ services:
 ```
 
 > **Note:** The repository includes a complete `docker-compose.yml` file at the root with health checks, persistent volumes, and networking configured for stdio transport (default). See the "Using Docker Compose" section above for details.
+
 
 ### Using with Remote FalkorDB
 
