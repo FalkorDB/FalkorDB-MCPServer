@@ -315,6 +315,30 @@ describe('ErrorHandler', () => {
       expect(result.content[0].text).not.toContain('admin:secret');
     });
 
+    it('should sanitize connection strings without credentials to hide network topology', () => {
+      // Arrange
+      const error = new Error('Could not connect to redis://internal-cache-server:6379/0');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toContain('redis://<host>');
+      expect(result.content[0].text).not.toContain('internal-cache-server');
+    });
+
+    it('should sanitize falkordb connection strings without credentials', () => {
+      // Arrange
+      const error = new Error('Failed to connect to falkordb://prod-db.internal:6379');
+
+      // Act
+      const result = handler.toMcpErrorResult(error);
+
+      // Assert
+      expect(result.content[0].text).toContain('falkordb://<host>');
+      expect(result.content[0].text).not.toContain('prod-db.internal');
+    });
+
     it('should sanitize IP addresses and ports', () => {
       // Arrange
       const error = new Error('Connection refused to 192.168.1.100:6379');

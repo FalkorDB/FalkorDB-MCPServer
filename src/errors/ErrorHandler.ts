@@ -108,6 +108,12 @@ export class ErrorHandler {
     sanitized = sanitized.replace(/postgresql:\/\/[^@\s]+@[^\s]+/gi, 'postgresql://<credentials>@<host>');
     sanitized = sanitized.replace(/falkordb:\/\/[^@\s]+@[^\s]+/gi, 'falkordb://<credentials>@<host>');
 
+    // Remove connection strings without credentials (prevents leaking internal network topology)
+    sanitized = sanitized.replace(/redis:\/\/(?![^@\s]+@)[^\s]+/gi, 'redis://<host>');
+    sanitized = sanitized.replace(/mongodb:\/\/(?![^@\s]+@)[^\s]+/gi, 'mongodb://<host>');
+    sanitized = sanitized.replace(/postgresql:\/\/(?![^@\s]+@)[^\s]+/gi, 'postgresql://<host>');
+    sanitized = sanitized.replace(/falkordb:\/\/(?![^@\s]+@)[^\s]+/gi, 'falkordb://<host>');
+
     // Remove potential password/token patterns (more specific to capture full values)
     sanitized = sanitized.replace(/password[=:]\s*(\S+)/gi, 'password=<redacted>');
     sanitized = sanitized.replace(/\btoken[=:]\s*(\S+)/gi, 'token=<redacted>');
