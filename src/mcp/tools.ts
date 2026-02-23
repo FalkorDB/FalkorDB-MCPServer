@@ -6,20 +6,49 @@ import { logger } from '../services/logger.service.js';
 import { AppError, CommonErrors } from '../errors/AppError.js';
 import { config } from '../config/index.js';
 
+// Define schemas as simple objects first to avoid TS2589 deep recursion
+const queryGraphSchema = {
+  graphName: z.string().describe("The name of the graph to query"),
+  query: z.string().describe("The OpenCypher query to run"),
+  readOnly: z.boolean().optional().describe("If true, executes as a read-only query (GRAPH.RO_QUERY). Useful for replica instances or to prevent accidental writes. Defaults to FALKORDB_DEFAULT_READONLY environment variable."),
+};
+
+const queryGraphReadOnlySchema = {
+  graphName: z.string().describe("The name of the graph to query"),
+  query: z.string().describe("The read-only OpenCypher query to run (write operations will fail)"),
+};
+
+const deleteGraphSchema = {
+  graphName: z.string().describe("The name of the graph to delete"),
+  confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
+};
+
+const setKeySchema = {
+  key: z.string().describe("The key to set"),
+  value: z.string().describe("The value to set"),
+};
+
+const getKeySchema = {
+  key: z.string().describe("The key to get."),
+};
+
+const deleteKeySchema = {
+  key: z.string().describe("The key to delete"),
+  confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
+};
+
 function registerQueryGraphTool(server: McpServer): void {
-  // @ts-expect-error TS2589 - MCP SDK registerTool type inference exceeds recursion limit
   server.registerTool(
     "query_graph",
     {
       title: "Query Graph",
       description: "Run an OpenCypher query on a graph. Supports both read-write and read-only queries.",
-      inputSchema: {
-        graphName: z.string().describe("The name of the graph to query"),
-        query: z.string().describe("The OpenCypher query to run"),
-        readOnly: z.boolean().optional().describe("If true, executes as a read-only query (GRAPH.RO_QUERY). Useful for replica instances or to prevent accidental writes. Defaults to FALKORDB_DEFAULT_READONLY environment variable."),
-      },
+      inputSchema: queryGraphSchema as any, // Cast to any to prevent TS2589 (deep recursion) during type inference
     },
-    async ({graphName, query, readOnly}) => {
+    async (args: unknown) => {
+      // Manual validation since we're using raw shape for registration
+      const {graphName, query, readOnly} = z.object(queryGraphSchema).parse(args);
+      
       try {
         if (!graphName?.trim()) {
           throw new AppError(
@@ -45,7 +74,7 @@ function registerQueryGraphTool(server: McpServer): void {
         
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: JSON.stringify(result, null, 2)
           }]
         };
@@ -63,12 +92,10 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
     {
       title: "Query Graph (Read-Only)",
       description: "Run a read-only OpenCypher query on a graph using GRAPH.RO_QUERY. This ensures no write operations are performed and is ideal for replica instances.",
-      inputSchema: {
-        graphName: z.string().describe("The name of the graph to query"),
-        query: z.string().describe("The read-only OpenCypher query to run (write operations will fail)"),
-      },
+      inputSchema: queryGraphReadOnlySchema as any,
     },
-    async ({graphName, query}) => {
+    async (args: unknown) => {
+      const {graphName, query} = z.object(queryGraphReadOnlySchema).parse(args);
       try {
         if (!graphName?.trim()) {
           throw new AppError(
@@ -91,7 +118,7 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
         
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: JSON.stringify(result, null, 2)
           }]
         };
@@ -119,7 +146,7 @@ function registerListGraphsTool(server: McpServer): void {
         
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: result.join("\n"),
           }]
         };
@@ -138,12 +165,10 @@ function registerDeleteGraphTool(server: McpServer): void {
     {
       title: "Delete Graph",
       description: "Permanently delete a graph from the database. WARNING: This action is irreversible. You must set confirmDelete to true to proceed.",
-      inputSchema: {
-        graphName: z.string().describe("The name of the graph to delete"),
-        confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-      },
+      inputSchema: deleteGraphSchema as any,
     },
-    async ({graphName}) => {
+    async (args: unknown) => {
+      const {graphName} = z.object(deleteGraphSchema).parse(args);
       try {
         if (!graphName?.trim()) {
           throw new AppError(
@@ -158,7 +183,7 @@ function registerDeleteGraphTool(server: McpServer): void {
         
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: `Graph ${graphName} deleted`
           }]
         };
@@ -185,7 +210,7 @@ function registerListKeysTool(server: McpServer): void {
         
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: keys.join("\n"),
           }]
         };
@@ -204,12 +229,10 @@ function registerSetKeyTool(server: McpServer): void {
     {
       title: "Set Key",
       description: "Set a key in Redis",
-      inputSchema: {
-        key: z.string().describe("The key to set"),
-        value: z.string().describe("The value to set"),
-      },
+      inputSchema: setKeySchema as any,
     },
-    async ({key, value}) => {
+    async (args: unknown) => {
+      const {key, value} = z.object(setKeySchema).parse(args);
       try {
         if (!key?.trim()) {
           throw new AppError(
@@ -232,7 +255,7 @@ function registerSetKeyTool(server: McpServer): void {
 
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: `Key ${key} set successfully`
           }]
         };
@@ -251,11 +274,10 @@ function registerGetKeyTool(server: McpServer): void {
     {
       title: "Get Key",
       description: "Get a key from Redis",
-      inputSchema: {
-        key: z.string().describe("The key to get."),
-      },
+      inputSchema: getKeySchema as any,
     },
-    async ({key}) => {
+    async (args: unknown) => {
+      const {key} = z.object(getKeySchema).parse(args);
       try {
         if (!key?.trim()) {
           throw new AppError(
@@ -270,7 +292,7 @@ function registerGetKeyTool(server: McpServer): void {
         
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: `Key ${key} is ${value ?? 'null (not found)'}`
           }]
         };
@@ -288,12 +310,10 @@ function registerDeleteKeyTool(server: McpServer): void {
     {
       title: "Delete Key",
       description: "Permanently delete a key from Redis. WARNING: This action is irreversible. You must set confirmDelete to true to proceed.",
-      inputSchema: {
-        key: z.string().describe("The key to delete"),
-        confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-      },
+      inputSchema: deleteKeySchema as any,
     },
-    async ({key}) => {
+    async (args: unknown) => {
+      const {key} = z.object(deleteKeySchema).parse(args);
       try {
         if (!key?.trim()) {
           throw new AppError(
@@ -308,7 +328,7 @@ function registerDeleteKeyTool(server: McpServer): void {
 
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: `Key ${key} deleted`
           }]
         };
