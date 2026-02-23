@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { createRequire } from 'module';
 import { falkorDBService } from './services/falkordb.service.js';
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -9,6 +10,9 @@ import { logger } from './services/logger.service.js';
 import registerAllTools from './mcp/tools.js';
 import registerAllResources from './mcp/resources.js';
 import registerAllPrompts from './mcp/prompts.js';
+
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
 
 // Setup global error handlers following Node.js best practices
 process.on('uncaughtException', (error: Error) => {
@@ -44,7 +48,7 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 // Create an MCP server
 const server = new McpServer({
   name: "falkordb-mcpserver",
-  version: "1.0.0"
+  version: version
 }, {
   capabilities: {
     tools: {

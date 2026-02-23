@@ -137,9 +137,10 @@ function registerDeleteGraphTool(server: McpServer): void {
     "delete_graph",
     {
       title: "Delete Graph",
-      description: "Delete a graph from the database",
+      description: "Permanently delete a graph from the database. WARNING: This action is irreversible. You must set confirmDelete to true to proceed.",
       inputSchema: {
         graphName: z.string().describe("The name of the graph to delete"),
+        confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
       },
     },
     async ({graphName}) => {
@@ -286,9 +287,10 @@ function registerDeleteKeyTool(server: McpServer): void {
     "delete_key",
     {
       title: "Delete Key",
-      description: "Delete a key from Redis",
+      description: "Permanently delete a key from Redis. WARNING: This action is irreversible. You must set confirmDelete to true to proceed.",
       inputSchema: {
         key: z.string().describe("The key to delete"),
+        confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
       },
     },
     async ({key}) => {

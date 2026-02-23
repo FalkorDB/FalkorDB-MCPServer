@@ -13,11 +13,25 @@ class RedisService {
     // Don't initialize in constructor - use explicit initialization
   }
 
+  private sanitizeUrl(url: string): string {
+    try {
+      const parsed = new URL(url);
+      if (parsed.username || parsed.password) {
+        parsed.username = parsed.username ? '***' : '';
+        parsed.password = parsed.password ? '***' : '';
+      }
+      return parsed.toString();
+    } catch {
+      return '<invalid-url>';
+    }
+  }
+
   async initialize(): Promise<void> {
     if (this.initializingPromise) {
       return this.initializingPromise;
     }
 
+    this.retryCount = 0;
     this.initializingPromise = this._initialize();
 
     try {
@@ -30,7 +44,7 @@ class RedisService {
   private async _initialize(): Promise<void> {
     try {
       logger.info('Attempting to connect to Redis', {
-        url: config.redis.url,
+        url: this.sanitizeUrl(config.redis.url),
         attempt: this.retryCount + 1
       });
 

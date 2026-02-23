@@ -22,8 +22,8 @@ You are working with a FalkorDB graph database to manage user information and re
 
 **Your task is to:**
 
-1. **Check if user exists**: Search for a node with the name "${name}" in the memory graph
-2. **Create user node if needed**: If no node exists with this name, create a new user node with the following properties:
+1. **Check if user exists**: Search for a node with the name "${name}" in the memory graph using a parameterized query: \`MATCH (u) WHERE u.name = $name RETURN u\` with params \`{name: "${name}"}\`
+2. **Create user node if needed**: If no node exists with this name, create a new user node using a parameterized query with the following properties:
    - name: "${name}"
    - type: "User"
    - created_at: current timestamp
@@ -55,6 +55,7 @@ Please proceed with setting up the user "${name}" in the memory graph.`
 }
 
 function registerMemoryQueryPrompt(server: McpServer): void {
+  // @ts-expect-error TS2589 - MCP SDK registerPrompt type inference exceeds recursion limit
   server.registerPrompt(
     "memory_query",
     {
@@ -63,7 +64,7 @@ function registerMemoryQueryPrompt(server: McpServer): void {
       argsSchema: {
         query: z.string().describe("The query or topic to search for in memory"),
         context: z.string().optional().describe("Additional context to help scope the search"),
-        relationship_depth: z.string().describe("How many relationship hops to traverse (1-3)")
+        relationship_depth: z.coerce.number().min(1).max(3).describe("How many relationship hops to traverse (1-3)")
       }
     },
     async ({query, context, relationship_depth}) => {
@@ -78,7 +79,8 @@ ${context ? `- Additional Context: ${context}` : ''}
 
 **Your task is to:**
 
-1. **Search for relevant nodes**: Use Cypher queries to find nodes that match or relate to "${query}"
+1. **Search for relevant nodes**: Use parameterized Cypher queries to find nodes that match or relate to the search query
+   - Always use query parameters (e.g., \`$query\`) instead of string interpolation to prevent injection
    - Look for nodes with matching names, properties, or content
    - Consider partial matches and semantic relationships
    
@@ -104,11 +106,13 @@ ${context ? `- Additional Context: ${context}` : ''}
 - Include LIMIT clauses to manage result size
 - Order results by relevance or timestamp
 
-**Example Cypher patterns:**
+**Example Cypher patterns (always use parameterized queries):**
 \`\`\`cypher
-MATCH (n) WHERE n.name CONTAINS "${query}" OR n.content CONTAINS "${query}"
+// Use $query parameter - never interpolate user input directly
+MATCH (n) WHERE n.name CONTAINS $query OR n.content CONTAINS $query
 MATCH (n)-[r*1..${relationship_depth}]-(related)
 RETURN n, r, related ORDER BY n.timestamp DESC
+// Pass params: {query: "${query}"}
 \`\`\`
 
 Please proceed with querying the memory graph for information about "${query}".`
