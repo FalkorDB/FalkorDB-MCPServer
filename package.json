@@ -90,7 +90,8 @@
     "registry": "https://registry.npmjs.org/"
   },
   "overrides": {
-    "minimatch": "^10.2.1"
+    "minimatch": "^10.2.1",
+    "test-exclude": "^7.0.2"
   },
   "funding": {
     "type": "github",
