@@ -307,7 +307,25 @@ Requests without a valid key receive a `401 Unauthorized` response. Auth is only
 
 ### Using with Docker
 
-Build and run the MCP server in a Docker container (defaults to HTTP transport):
+**Using pre-built images from Docker Hub:**
+
+```bash
+# Use the latest stable release
+docker pull falkordb/mcpserver:latest
+docker run -p 3000:3000 \
+  -e FALKORDB_HOST=host.docker.internal \
+  -e FALKORDB_PORT=6379 \
+  -e MCP_API_KEY=your-secret-key \
+  falkordb/mcpserver:latest
+
+# Or use the edge version (latest main branch)
+docker pull falkordb/mcpserver:edge
+
+# Or pin to a specific version
+docker pull falkordb/mcpserver:1.0.0
+```
+
+**Building locally:**
 
 ```bash
 docker build -t falkordb-mcpserver .
@@ -328,7 +346,7 @@ services:
       - "6379:6379"
 
   mcp-server:
-    build: .
+    image: falkordb/mcpserver:latest  # or use 'build: .' to build locally
     ports:
       - "3000:3000"
     environment:
