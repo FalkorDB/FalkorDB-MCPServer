@@ -16,7 +16,7 @@ services:
       start_period: 30s
 
   falkordb-mcpserver:
-    build: .
+    image: falkordb/mcpserver:latest
     restart: unless-stopped
     ports:
       - "3000:3000"
