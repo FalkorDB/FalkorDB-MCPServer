@@ -7,7 +7,6 @@ import { falkorDBService } from './services/falkordb.service.js';
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { redisService } from './services/redis.service.js';
 import { errorHandler } from './errors/ErrorHandler.js';
 import { logger } from './services/logger.service.js';
 import { config } from './config/index.js';
@@ -70,7 +69,7 @@ let httpServer: ReturnType<typeof createServer> | null = null;
 
 const gracefulShutdown = async (signal: string) => {
   await logger.info(`Received ${signal}, shutting down gracefully`);
-  
+
   try {
     if (httpServer) {
       await new Promise<void>((resolve, reject) => {
@@ -78,7 +77,6 @@ const gracefulShutdown = async (signal: string) => {
       });
     }
     await falkorDBService.close();
-    await redisService.close();
     await logger.info('All services closed successfully');
     process.exit(0);
   } catch (error) {
@@ -92,7 +90,7 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Create an MCP server
 const server = new McpServer({
-  name: "falkordb-mcpserver",
+  name: "falkordb",
   version: version
 }, {
   capabilities: {
@@ -123,10 +121,9 @@ registerAllPrompts(server);
 // Initialize services before starting server
 async function initializeServices(): Promise<void> {
   await logger.info('Initializing FalkorDB MCP server...');
-  
+
   try {
     await falkorDBService.initialize();
-    await redisService.initialize();
     await logger.info('All services initialized successfully');
   } catch (error) {
     await logger.error('Failed to initialize services', error instanceof Error ? error : new Error(String(error)));
@@ -245,7 +242,7 @@ async function startHTTPServer(): Promise<void> {
 
 function createSessionServer(): McpServer {
   const sessionServer = new McpServer({
-    name: "falkordb-mcpserver",
+    name: "falkordb",
     version: version,
   }, {
     capabilities: {
