@@ -1,4 +1,12 @@
+[![Tests](https://img.shields.io/github/actions/workflow/status/falkordb/FalkorDB-MCPServer/node.yml?branch=main)](https://github.com/falkordb/FalkorDB-MCPServer/actions/workflows/node.yml)
+[![Coverage](https://codecov.io/gh/falkordb/FalkorDB-MCPServer/branch/main/graph/badge.svg?token=nNxm2N0Xrl)](https://codecov.io/gh/falkordb/FalkorDB-MCPServer)
+[![License](https://img.shields.io/github/license/falkordb/FalkorDB-MCPServer.svg)](https://github.com/falkordb/FalkorDB-MCPServer/blob/main/LICENSE)
+[![Discord](https://img.shields.io/discord/1146782921294884966.svg?style=social&logo=discord)](https://discord.com/invite/99y2Ubh6tg)
+[![Twitter](https://img.shields.io/twitter/follow/falkordb?style=social)](https://twitter.com/falkordb)
+
 # FalkorDB MCP Server
+
+[![Try Free](https://img.shields.io/badge/Try%20Free-FalkorDB%20Cloud-FF8101?labelColor=FDE900&style=for-the-badge&link=https://app.falkordb.cloud)](https://app.falkordb.cloud)
 
 A Model Context Protocol (MCP) server for FalkorDB, allowing AI models to query and interact with graph databases.
 
