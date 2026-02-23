@@ -59,7 +59,7 @@ jobs:
     if: github.event_name == 'release' && github.event.action == 'published'
     environment:
       name: Default
-      url: https://www.npmjs.com/package/falkordb-mcpserver/v/${{ github.event.release.tag_name }}
+      url: https://www.npmjs.com/package/@falkordb/mcpserver/v/${{ github.event.release.tag_name }}
     
     steps:
     - name: Checkout code
