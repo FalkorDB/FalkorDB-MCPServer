@@ -6,13 +6,25 @@ import { z } from "zod";
 // This is necessary because the MCP SDK's registerPrompt causes TS2589 during coverage collection
 const userSetupArgsSchema = {
   name: z.string().describe("The name of the user"),
-} as any;
+};
+
+const UserSetupArgsSchemaObj = z.object(userSetupArgsSchema);
+type UserSetupArgs = z.infer<typeof UserSetupArgsSchemaObj>;
+
+// Export to satisfy linter
+export { UserSetupArgsSchemaObj };
 
 const memoryQueryArgsSchema = {
   query: z.string().describe("The query or topic to search for in memory"),
   context: z.string().optional().describe("Additional context to help scope the search"),
   relationship_depth: z.coerce.number().min(1).max(3).describe("How many relationship hops to traverse (1-3)")
-} as any;
+};
+
+const MemoryQueryArgsSchemaObj = z.object(memoryQueryArgsSchema);
+type MemoryQueryArgs = z.infer<typeof MemoryQueryArgsSchemaObj>;
+
+// Export to satisfy linter
+export { MemoryQueryArgsSchemaObj };
 
 function registerUserSetupPrompt(server: McpServer): void {
   // Register user_setup prompt
@@ -21,9 +33,10 @@ function registerUserSetupPrompt(server: McpServer): void {
     {
       title: "User Setup",
       description: "Setup the user graph node and connect it to the rest of the relevant nodes",
-      argsSchema: userSetupArgsSchema,
+      argsSchema: userSetupArgsSchema as any,
     },
-    async ({name}) => {
+    async (args: any) => {
+      const {name} = args as UserSetupArgs;
       const userMessage = `# User Setup Task
 
 You are working with a FalkorDB graph database to manage user information and relationships. 
@@ -53,9 +66,9 @@ Please proceed with setting up the user "${name}" in the memory graph.`
       return {
         messages: [
           {
-            role: "user",
+            role: "user" as const,
             content: {
-              type: "text",
+              type: "text" as const,
               text: userMessage
             }
           }
@@ -71,9 +84,10 @@ function registerMemoryQueryPrompt(server: McpServer): void {
     {
       title: "Memory Query",
       description: "Query the memory graph to retrieve and analyze stored information",
-      argsSchema: memoryQueryArgsSchema,
+      argsSchema: memoryQueryArgsSchema as any,
     },
-    async ({query, context, relationship_depth}) => {
+    async (args: any) => {
+      const {query, context, relationship_depth} = args as MemoryQueryArgs;
       const memoryMessage = `# Memory Query Task
 
 You are working with a FalkorDB graph database to retrieve and analyze stored memory information.
@@ -126,9 +140,9 @@ Please proceed with querying the memory graph for information about "${query}".`
       return {
         messages: [
           {
-            role: "user",
+            role: "user" as const,
             content: {
-              type: "text",
+              type: "text" as const,
               text: memoryMessage
             }
           }
@@ -231,9 +245,9 @@ Begin with analyzing the current graph structure and proceed with the reorganiza
       return {
         messages: [
           {
-            role: "user",
+            role: "user" as const,
             content: {
-              type: "text",
+              type: "text" as const,
               text: reorganizationMessage
             }
           }

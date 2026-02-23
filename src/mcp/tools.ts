@@ -13,31 +13,59 @@ const queryGraphSchema = {
   graphName: z.string().describe("The name of the graph to query"),
   query: z.string().describe("The OpenCypher query to run"),
   readOnly: z.boolean().optional().describe("If true, executes as a read-only query (GRAPH.RO_QUERY). Useful for replica instances or to prevent accidental writes. Defaults to FALKORDB_DEFAULT_READONLY environment variable."),
-} as any;
+};
+
+const QueryGraphSchemaObj = z.object(queryGraphSchema);
+type QueryGraphArgs = z.infer<typeof QueryGraphSchemaObj>;
 
 const queryGraphReadOnlySchema = {
   graphName: z.string().describe("The name of the graph to query"),
   query: z.string().describe("The read-only OpenCypher query to run (write operations will fail)"),
-} as any;
+};
+
+const QueryGraphReadOnlySchemaObj = z.object(queryGraphReadOnlySchema);
+type QueryGraphReadOnlyArgs = z.infer<typeof QueryGraphReadOnlySchemaObj>;
 
 const deleteGraphSchema = {
   graphName: z.string().describe("The name of the graph to delete"),
   confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-} as any;
+};
+
+const DeleteGraphSchemaObj = z.object(deleteGraphSchema);
+type DeleteGraphArgs = z.infer<typeof DeleteGraphSchemaObj>;
 
 const setKeySchema = {
   key: z.string().describe("The key to set"),
   value: z.string().describe("The value to set"),
-} as any;
+};
+
+const SetKeySchemaObj = z.object(setKeySchema);
+type SetKeyArgs = z.infer<typeof SetKeySchemaObj>;
 
 const getKeySchema = {
   key: z.string().describe("The key to get."),
-} as any;
+};
+
+const GetKeySchemaObj = z.object(getKeySchema);
+type GetKeyArgs = z.infer<typeof GetKeySchemaObj>;
 
 const deleteKeySchema = {
   key: z.string().describe("The key to delete"),
   confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-} as any;
+};
+
+const DeleteKeySchemaObj = z.object(deleteKeySchema);
+type DeleteKeyArgs = z.infer<typeof DeleteKeySchemaObj>;
+
+// Export schemas to satisfy linter
+export {
+  QueryGraphSchemaObj,
+  QueryGraphReadOnlySchemaObj,
+  DeleteGraphSchemaObj,
+  SetKeySchemaObj,
+  GetKeySchemaObj,
+  DeleteKeySchemaObj
+};
 
 function registerQueryGraphTool(server: McpServer): void {
   server.registerTool(
@@ -45,9 +73,10 @@ function registerQueryGraphTool(server: McpServer): void {
     {
       title: "Query Graph",
       description: "Run an OpenCypher query on a graph. Supports both read-write and read-only queries.",
-      inputSchema: queryGraphSchema,
+      inputSchema: queryGraphSchema as any,
     },
-    async ({graphName, query, readOnly}) => {
+    async (args: any) => {
+      const {graphName, query, readOnly} = args as QueryGraphArgs;
       try {
         if (!graphName?.trim()) {
           throw new AppError(
@@ -73,7 +102,7 @@ function registerQueryGraphTool(server: McpServer): void {
         
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: JSON.stringify(result, null, 2)
           }]
         };
@@ -91,9 +120,10 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
     {
       title: "Query Graph (Read-Only)",
       description: "Run a read-only OpenCypher query on a graph using GRAPH.RO_QUERY. This ensures no write operations are performed and is ideal for replica instances.",
-      inputSchema: queryGraphReadOnlySchema,
+      inputSchema: queryGraphReadOnlySchema as any,
     },
-    async ({graphName, query}) => {
+    async (args: any) => {
+      const {graphName, query} = args as QueryGraphReadOnlyArgs;
       try {
         if (!graphName?.trim()) {
           throw new AppError(
@@ -116,7 +146,7 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
         
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: JSON.stringify(result, null, 2)
           }]
         };
@@ -144,7 +174,7 @@ function registerListGraphsTool(server: McpServer): void {
         
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: result.join("\n"),
           }]
         };
@@ -163,9 +193,10 @@ function registerDeleteGraphTool(server: McpServer): void {
     {
       title: "Delete Graph",
       description: "Permanently delete a graph from the database. WARNING: This action is irreversible. You must set confirmDelete to true to proceed.",
-      inputSchema: deleteGraphSchema,
+      inputSchema: deleteGraphSchema as any,
     },
-    async ({graphName}) => {
+    async (args: any) => {
+      const {graphName} = args as DeleteGraphArgs;
       try {
         if (!graphName?.trim()) {
           throw new AppError(
@@ -180,7 +211,7 @@ function registerDeleteGraphTool(server: McpServer): void {
         
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: `Graph ${graphName} deleted`
           }]
         };
@@ -207,7 +238,7 @@ function registerListKeysTool(server: McpServer): void {
         
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: keys.join("\n"),
           }]
         };
@@ -226,9 +257,10 @@ function registerSetKeyTool(server: McpServer): void {
     {
       title: "Set Key",
       description: "Set a key in Redis",
-      inputSchema: setKeySchema,
+      inputSchema: setKeySchema as any,
     },
-    async ({key, value}) => {
+    async (args: any) => {
+      const {key, value} = args as SetKeyArgs;
       try {
         if (!key?.trim()) {
           throw new AppError(
@@ -251,7 +283,7 @@ function registerSetKeyTool(server: McpServer): void {
 
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: `Key ${key} set successfully`
           }]
         };
@@ -270,9 +302,10 @@ function registerGetKeyTool(server: McpServer): void {
     {
       title: "Get Key",
       description: "Get a key from Redis",
-      inputSchema: getKeySchema,
+      inputSchema: getKeySchema as any,
     },
-    async ({key}) => {
+    async (args: any) => {
+      const {key} = args as GetKeyArgs;
       try {
         if (!key?.trim()) {
           throw new AppError(
@@ -287,7 +320,7 @@ function registerGetKeyTool(server: McpServer): void {
         
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: `Key ${key} is ${value ?? 'null (not found)'}`
           }]
         };
@@ -305,9 +338,10 @@ function registerDeleteKeyTool(server: McpServer): void {
     {
       title: "Delete Key",
       description: "Permanently delete a key from Redis. WARNING: This action is irreversible. You must set confirmDelete to true to proceed.",
-      inputSchema: deleteKeySchema,
+      inputSchema: deleteKeySchema as any,
     },
-    async ({key}) => {
+    async (args: any) => {
+      const {key} = args as DeleteKeyArgs;
       try {
         if (!key?.trim()) {
           throw new AppError(
@@ -322,7 +356,7 @@ function registerDeleteKeyTool(server: McpServer): void {
 
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: `Key ${key} deleted`
           }]
         };
