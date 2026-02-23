@@ -1,10 +1,15 @@
-# FalkorDB MCP Server
-
-> 🚀 **Connect AI models to FalkorDB graph databases through the Model Context Protocol**
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/github/actions/workflow/status/falkordb/FalkorDB-MCPServer/node.yml?branch=main)](https://github.com/falkordb/FalkorDB-MCPServer/actions/workflows/node.yml)
+[![Coverage](https://codecov.io/gh/falkordb/FalkorDB-MCPServer/branch/main/graph/badge.svg?token=nNxm2N0Xrl)](https://codecov.io/gh/falkordb/FalkorDB-MCPServer)
+[![License](https://img.shields.io/github/license/falkordb/FalkorDB-MCPServer.svg)](https://github.com/falkordb/FalkorDB-MCPServer/blob/main/LICENSE)
+[![Discord](https://img.shields.io/discord/1146782921294884966.svg?style=social&logo=discord)](https://discord.com/invite/99y2Ubh6tg)
+[![X (formerly Twitter)](https://img.shields.io/badge/follow-%40falkordb-1DA1F2?logo=x&style=social)](https://x.com/falkordb)
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-blue)](https://modelcontextprotocol.io)
 
+# FalkorDB MCP Server
+
+[![Try Free](https://img.shields.io/badge/Try%20Free-FalkorDB%20Cloud-FF8101?labelColor=FDE900&style=for-the-badge&link=https://app.falkordb.cloud)](https://app.falkordb.cloud)
+
+A Model Context Protocol (MCP) server for FalkorDB, allowing AI models to query and interact with graph databases.
 FalkorDB MCP Server enables AI assistants like Claude to interact with FalkorDB graph databases using natural language. Query your graph data, create relationships, and manage your knowledge graph - all through conversational AI.
 
 ## 🎯 What is this?
