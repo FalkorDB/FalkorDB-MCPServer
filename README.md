@@ -17,7 +17,6 @@ FalkorDB MCP Server enables AI assistants like Claude to interact with FalkorDB 
 This server implements the [Model Context Protocol (MCP)](https://modelcontextprotocol.io), allowing AI models to:
 - **Query graph databases** using OpenCypher (with read-only mode support)
 - **Create and manage** nodes and relationships
-- **Store and retrieve** key-value data
 - **List and explore** multiple graphs
 - **Delete graphs** when needed
 - **Read-only queries** for replica instances or to prevent accidental writes
@@ -54,6 +53,32 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
+### Running with npx
+
+You can run the server directly from the command line using npx:
+
+**Using inline environment variables:**
+
+```bash
+# Run with stdio transport (default)
+FALKORDB_HOST=localhost FALKORDB_PORT=6379 npx -y @falkordb/mcpserver
+
+# Run with HTTP transport
+MCP_TRANSPORT=http MCP_PORT=3005 FALKORDB_HOST=localhost FALKORDB_PORT=6379 npx -y @falkordb/mcpserver
+```
+
+**Using a .env file:**
+
+```bash
+# Using dotenv-cli to load environment variables from .env
+npx dotenv-cli -e .env -- npx @falkordb/mcpserver
+```
+
+This is useful for:
+- Quick testing and development
+- Running the server standalone without Claude Desktop
+- Custom integrations and scripting
+
 ### Installation
 
 1. **Clone and install:**
@@ -72,19 +97,14 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
    ```env
    # Environment Configuration
    NODE_ENV=development
-   
+
    # FalkorDB Configuration
    FALKORDB_HOST=localhost
    FALKORDB_PORT=6379
    FALKORDB_USERNAME=    # Optional
    FALKORDB_PASSWORD=    # Optional
    FALKORDB_DEFAULT_READONLY=false  # Set to 'true' for read-only mode (useful for replicas)
-   
-   # Redis Configuration (for key-value operations)
-   REDIS_URL=redis://localhost:6379
-   REDIS_USERNAME=       # Optional
-   REDIS_PASSWORD=       # Optional
-   
+
    # Logging Configuration (optional)
    ENABLE_FILE_LOGGING=false
    ```
@@ -136,7 +156,6 @@ There's also a dedicated `query_graph_readonly` tool that always executes querie
 ```text
 "Create a new person named Alice who knows Bob"
 "Add a 'WORKS_AT' relationship between Alice and TechCorp"
-"Store my API key in the database"
 ```
 
 ### 📊 Explore Structure
@@ -195,7 +214,6 @@ src/
 ├── index.ts                   # MCP server entry point
 ├── services/                  # Core business logic
 │   ├── falkordb.service.ts   # FalkorDB operations
-│   ├── redis.service.ts      # Key-value operations
 │   └── logger.service.ts     # Logging and MCP notifications
 ├── mcp/                      # MCP protocol implementations
 │   ├── tools.ts             # MCP tool definitions
