@@ -11,8 +11,8 @@ const userSetupArgsSchema = {
 const UserSetupArgsSchemaObj = z.object(userSetupArgsSchema);
 type UserSetupArgs = z.infer<typeof UserSetupArgsSchemaObj>;
 
-// Export to satisfy linter
-export { UserSetupArgsSchemaObj };
+// Suppress unused variable warning
+void UserSetupArgsSchemaObj;
 
 const memoryQueryArgsSchema = {
   query: z.string().describe("The query or topic to search for in memory"),
@@ -23,8 +23,8 @@ const memoryQueryArgsSchema = {
 const MemoryQueryArgsSchemaObj = z.object(memoryQueryArgsSchema);
 type MemoryQueryArgs = z.infer<typeof MemoryQueryArgsSchemaObj>;
 
-// Export to satisfy linter
-export { MemoryQueryArgsSchemaObj };
+// Suppress unused variable warning
+void MemoryQueryArgsSchemaObj;
 
 function registerUserSetupPrompt(server: McpServer): void {
   // Register user_setup prompt

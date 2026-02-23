@@ -9,6 +9,13 @@ import { config } from '../config/index.js';
 // Extract Zod schemas to break type recursion cycle
 // Using type assertion to prevent TypeScript from deeply inferring Zod schema types
 // This is necessary because the MCP SDK's registerTool causes TS2589 during coverage collection
+//
+// Pattern used:
+// 1. Define raw schema object
+// 2. Create Zod object from raw schema (for type inference)
+// 3. Infer TS type from Zod object
+// 4. Pass raw schema cast as 'any' to registerTool (breaks recursion)
+// 5. Explicitly cast 'args' to inferred type in handler
 const queryGraphSchema = {
   graphName: z.string().describe("The name of the graph to query"),
   query: z.string().describe("The OpenCypher query to run"),
@@ -57,15 +64,15 @@ const deleteKeySchema = {
 const DeleteKeySchemaObj = z.object(deleteKeySchema);
 type DeleteKeyArgs = z.infer<typeof DeleteKeySchemaObj>;
 
-// Export schemas to satisfy linter
-export {
-  QueryGraphSchemaObj,
-  QueryGraphReadOnlySchemaObj,
-  DeleteGraphSchemaObj,
-  SetKeySchemaObj,
-  GetKeySchemaObj,
-  DeleteKeySchemaObj
-};
+// Suppress unused variable warnings for schema objects
+// These objects are used to infer types but are not used at runtime
+// This pattern is necessary to avoid TS2589 deep recursion errors
+void QueryGraphSchemaObj;
+void QueryGraphReadOnlySchemaObj;
+void DeleteGraphSchemaObj;
+void SetKeySchemaObj;
+void GetKeySchemaObj;
+void DeleteKeySchemaObj;
 
 function registerQueryGraphTool(server: McpServer): void {
   server.registerTool(
