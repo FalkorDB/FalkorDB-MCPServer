@@ -1,7 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { falkorDBService } from '../services/falkordb.service.js';
-import { redisService } from '../services/redis.service.js';
 import { logger } from '../services/logger.service.js';
 import { AppError, CommonErrors } from '../errors/AppError.js';
 import { config } from '../config/index.js';
@@ -20,20 +19,6 @@ const queryGraphReadOnlySchema = {
 
 const deleteGraphSchema = {
   graphName: z.string().describe("The name of the graph to delete"),
-  confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-};
-
-const setKeySchema = {
-  key: z.string().describe("The key to set"),
-  value: z.string().describe("The value to set"),
-};
-
-const getKeySchema = {
-  key: z.string().describe("The key to get."),
-};
-
-const deleteKeySchema = {
-  key: z.string().describe("The key to delete"),
   confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
 };
 
@@ -207,166 +192,6 @@ function registerDeleteGraphTool(server: McpServer): void {
   );
 }
 
-const listKeysInputSchema: Record<string, never> = {};
-
-function registerListKeysTool(server: McpServer): void {
-  server.registerTool(
-    "list_keys",
-    {
-      title: "List Keys",
-      description: "List all keys in Redis",
-      inputSchema: listKeysInputSchema,
-    },
-    async () => {
-      try {
-        const keys = await redisService.listKeys();
-        await logger.debug('List keys tool executed', { count: keys.length });
-        
-        return {
-          content: [{
-            type: "text" as const,
-            text: keys.join("\n"),
-          }]
-        };
-      } catch (error) {
-        await logger.error('List keys tool execution failed', error instanceof Error ? error : new Error(String(error)));
-        throw error;
-      }
-    }
-  );
-}
-
-const setKeyInputSchema = {
-  key: z.string().describe("The key to set"),
-  value: z.string().describe("The value to set"),
-};
-
-function registerSetKeyTool(server: McpServer): void {
-  // Register set_key tool
-  server.registerTool(
-    "set_key",
-    {
-      title: "Set Key",
-      description: "Set a key in Redis",
-      inputSchema: setKeySchema as any,
-    },
-    async (args: unknown) => {
-      const {key, value} = z.object(setKeySchema).parse(args);
-      try {
-        if (!key?.trim()) {
-          throw new AppError(
-            CommonErrors.INVALID_INPUT,
-            'Key is required and cannot be empty',
-            true
-          );
-        }
-        
-        if (value === undefined || value === null) {
-          throw new AppError(
-            CommonErrors.INVALID_INPUT,
-            'Value is required',
-            true
-          );
-        }
-        
-        await redisService.set(key, value);
-        await logger.debug('Set key tool executed successfully', { key });
-
-        return {
-          content: [{
-            type: "text" as const,
-            text: `Key ${key} set successfully`
-          }]
-        };
-      } catch (error) {
-        await logger.error('Set key tool execution failed', error instanceof Error ? error : new Error(String(error)), { key });
-        throw error;
-      }
-    }
-  );
-}
-
-const getKeyInputSchema = {
-  key: z.string().describe("The key to get."),
-};
-
-function registerGetKeyTool(server: McpServer): void {
-  // Register get_key tool
-  server.registerTool(
-    "get_key",
-    {
-      title: "Get Key",
-      description: "Get a key from Redis",
-      inputSchema: getKeySchema as any,
-    },
-    async (args: unknown) => {
-      const {key} = z.object(getKeySchema).parse(args);
-      try {
-        if (!key?.trim()) {
-          throw new AppError(
-            CommonErrors.INVALID_INPUT,
-            'Key is required and cannot be empty',
-            true
-          );
-        }
-        
-        const value = await redisService.get(key);
-        await logger.debug('Get key tool executed successfully', { key, hasValue: value !== null });
-        
-        return {
-          content: [{
-            type: "text" as const,
-            text: `Key ${key} is ${value ?? 'null (not found)'}`
-          }]
-        };
-      } catch (error) {
-        await logger.error('Get key tool execution failed', error instanceof Error ? error : new Error(String(error)), { key });
-        throw error;
-      }
-    }
-  );
-}
-
-const deleteKeyInputSchema = {
-  key: z.string().describe("The key to delete"),
-  confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
-};
-
-function registerDeleteKeyTool(server: McpServer): void {
-  server.registerTool(
-    "delete_key",
-    {
-      title: "Delete Key",
-      description: "Permanently delete a key from Redis. WARNING: This action is irreversible. You must set confirmDelete to true to proceed.",
-      inputSchema: deleteKeySchema as any,
-    },
-    async (args: unknown) => {
-      const {key} = z.object(deleteKeySchema).parse(args);
-      try {
-        if (!key?.trim()) {
-          throw new AppError(
-            CommonErrors.INVALID_INPUT,
-            'Key is required and cannot be empty',
-            true
-          );
-        }
-
-        await redisService.delete(key);
-        await logger.debug('Delete key tool executed successfully', { key });
-
-        return {
-          content: [{
-            type: "text" as const,
-            text: `Key ${key} deleted`
-          }]
-        };
-      } catch (error) {
-        await logger.error('Delete key tool execution failed', error instanceof Error ? error : new Error(String(error)), { key });
-        throw error;
-      }
-    }
-  )
-}
 
 export default function registerAllTools(server: McpServer): void {
   // Register query_graph tools
@@ -374,8 +199,4 @@ export default function registerAllTools(server: McpServer): void {
   registerQueryGraphReadOnlyTool(server);
   registerListGraphsTool(server);
   registerDeleteGraphTool(server);
-  registerSetKeyTool(server);
-  registerGetKeyTool(server);
-  registerDeleteKeyTool(server);
-  registerListKeysTool(server);
 }
