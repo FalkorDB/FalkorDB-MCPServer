@@ -52,8 +52,8 @@ class FalkorDBService {
             host: config.falkorDB.host,
             port: config.falkorDB.port,
           },
-          password: config.falkorDB.password,
-          username: config.falkorDB.username,
+          ...(config.falkorDB.username && { username: config.falkorDB.username }),
+          ...(config.falkorDB.password && { password: config.falkorDB.password }),
         });
 
         // Test connection
