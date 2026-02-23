@@ -16,6 +16,7 @@ export const config = {
     username: process.env.FALKORDB_USERNAME || '',
     password: process.env.FALKORDB_PASSWORD || '',
     defaultReadOnly: process.env.FALKORDB_DEFAULT_READONLY === 'true',
+    strictReadOnly: process.env.FALKORDB_STRICT_READONLY === 'true',
   },
   mcp: {
     transport: (process.env.MCP_TRANSPORT || 'stdio') as 'stdio' | 'http',
