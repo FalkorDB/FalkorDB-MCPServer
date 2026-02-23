@@ -1,13 +1,22 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} */
-module.exports = {
-    preset: 'ts-jest',
+export default {
+    preset: 'ts-jest/presets/default-esm',
+    extensionsToTreatAsEsm: ['.ts'],
     testEnvironment: 'node',
     roots: ['<rootDir>/src'],
     transform: {
-      '^.+\\.tsx?$': 'ts-jest',
+      '^.+\\.tsx?$': ['ts-jest', {
+        useESM: true
+      }],
     },
     testRegex: '(\\.|/)(test|spec)\\.tsx?$',
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+    moduleNameMapper: {
+      '^(\\.{1,2}/.*)\\.js$': '$1',
+    },
+    transformIgnorePatterns: [
+      'node_modules/(?!(platformdirs)/)'
+    ],
     collectCoverageFrom: [
       'src/**/*.ts',
       '!src/**/*.d.ts',
