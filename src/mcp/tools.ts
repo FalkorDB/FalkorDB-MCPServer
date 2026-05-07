@@ -124,6 +124,8 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
   )
 }
 
+const listGraphsInputSchema: Record<string, never> = {};
+
 function registerListGraphsTool(server: McpServer): void {
   // Register list_graphs tool
   server.registerTool(
@@ -131,7 +133,7 @@ function registerListGraphsTool(server: McpServer): void {
     {
       title: "List Graphs",
       description: "List all graphs available to query",
-      inputSchema: {},
+      inputSchema: listGraphsInputSchema,
     },
     async () => {
       try {
