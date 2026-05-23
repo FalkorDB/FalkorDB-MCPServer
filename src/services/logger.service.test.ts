@@ -103,6 +103,11 @@ describe('Logger Service', () => {
   });
 
   describe('MCP Server Integration', () => {
+    afterEach(() => {
+      // Clear all registered servers after each test to prevent test pollution
+      logger.clearMcpServers();
+    });
+
     it('should accept MCP server instance without throwing', () => {
       const mockMcpServer = {
         server: {
@@ -111,6 +116,61 @@ describe('Logger Service', () => {
       };
 
       expect(() => logger.setMcpServer(mockMcpServer as any)).not.toThrow();
+    });
+
+    it('should support multiple MCP servers for multi-session deployments', async () => {
+      const mockServer1 = {
+        server: {
+          notification: jest.fn().mockResolvedValue(undefined),
+        },
+      };
+      const mockServer2 = {
+        server: {
+          notification: jest.fn().mockResolvedValue(undefined),
+        },
+      };
+
+      // Add both servers
+      logger.setMcpServer(mockServer1 as any);
+      logger.setMcpServer(mockServer2 as any);
+
+      // Log a message
+      await logger.info('Test message for multiple servers');
+
+      // Both servers should receive the notification
+      expect(mockServer1.server.notification).toHaveBeenCalled();
+      expect(mockServer2.server.notification).toHaveBeenCalled();
+    });
+
+    it('should remove MCP server from notification list', async () => {
+      const mockServer1 = {
+        server: {
+          notification: jest.fn().mockResolvedValue(undefined),
+        },
+      };
+      const mockServer2 = {
+        server: {
+          notification: jest.fn().mockResolvedValue(undefined),
+        },
+      };
+
+      // Add both servers
+      logger.setMcpServer(mockServer1 as any);
+      logger.setMcpServer(mockServer2 as any);
+
+      // Remove server1
+      logger.removeMcpServer(mockServer1 as any);
+
+      // Clear previous calls
+      mockServer1.server.notification.mockClear();
+      mockServer2.server.notification.mockClear();
+
+      // Log a message
+      await logger.info('Test message after removing server');
+
+      // Only server2 should receive the notification
+      expect(mockServer1.server.notification).not.toHaveBeenCalled();
+      expect(mockServer2.server.notification).toHaveBeenCalled();
     });
   });
 
