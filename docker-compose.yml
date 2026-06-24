@@ -44,15 +44,23 @@ services:
     # on 8080 inside the container (fixed by the image), so the mapping target and
     # the in-container MCP_PORT must both stay 8080 — otherwise the host port
     # forwards to a port nothing is listening on and every connection is reset.
+    #
+    # Published to 127.0.0.1 by default: in HTTP mode the server only enforces
+    # Bearer auth when MCP_API_KEY is set, so a wildcard bind would expose an
+    # unauthenticated endpoint. To reach it from other hosts, set MCP_API_KEY
+    # and override the binding (e.g. "0.0.0.0:${MCP_PORT:-8080}:8080").
     ports:
-      - "${MCP_PORT:-8080}:8080"
+      - "127.0.0.1:${MCP_PORT:-8080}:8080"
     environment:
       - NODE_ENV=production
       - MCP_TRANSPORT=${MCP_TRANSPORT:-http}
       - MCP_PORT=8080
       - MCP_API_KEY=${MCP_API_KEY:-}
       - FALKORDB_HOST=falkordb
-      - FALKORDB_PORT=${FALKORDB_PORT:-6379}
+      # Fixed at 6379: this is the in-network port the falkordb service listens
+      # on. FALKORDB_PORT only remaps the *host* published port (see above), so
+      # the MCP server must always reach the service on its container port.
+      - FALKORDB_PORT=6379
       - FALKORDB_USERNAME=${FALKORDB_USERNAME:-}
       - FALKORDB_PASSWORD=${FALKORDB_PASSWORD:-}
       - FALKORDB_DEFAULT_READONLY=${FALKORDB_DEFAULT_READONLY:-false}
