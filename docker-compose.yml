@@ -2,14 +2,36 @@ services:
   falkordb:
     image: falkordb/falkordb:latest
     restart: unless-stopped
+    environment:
+      - FALKORDB_USERNAME=${FALKORDB_USERNAME:-}
+      - FALKORDB_PASSWORD=${FALKORDB_PASSWORD:-}
+    # Build Redis auth args from the credentials, then hand off to the image's
+    # real entrypoint. A blank FALKORDB_USERNAME still works: --requirepass sets
+    # the password on Redis's built-in `default` user, so a username-less login
+    # is always valid. When FALKORDB_USERNAME is set, an additional ACL user with
+    # the same password and full privileges is created.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ -n "$$FALKORDB_PASSWORD" ]; then
+          REDIS_ARGS="--requirepass $$FALKORDB_PASSWORD"
+          if [ -n "$$FALKORDB_USERNAME" ] && [ "$$FALKORDB_USERNAME" != "default" ]; then
+            REDIS_ARGS="$$REDIS_ARGS --user $$FALKORDB_USERNAME on >$$FALKORDB_PASSWORD ~* &* +@all"
+          fi
+          export REDIS_ARGS
+        fi
+        exec /var/lib/falkordb/bin/run.sh
     ports:
-      - "6379:6379"
+      - "${FALKORDB_PORT:-6379}:6379"
+      - "${FALKORDB_WEB_PORT:-3000}:3000"
     volumes:
       - falkordb-data:/data
     networks:
       - falkordb-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      # Authenticate the healthcheck too, or ping returns NOAUTH once a password
+      # is set and the MCP server's `depends_on: service_healthy` never unblocks.
+      test: ["CMD-SHELL", "redis-cli $${FALKORDB_PASSWORD:+-a $$FALKORDB_PASSWORD} ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -18,15 +40,19 @@ services:
   falkordb-mcpserver:
     image: falkordb/mcpserver:latest
     restart: unless-stopped
+    # MCP_PORT controls only the published host port. The server always listens
+    # on 8080 inside the container (fixed by the image), so the mapping target and
+    # the in-container MCP_PORT must both stay 8080 — otherwise the host port
+    # forwards to a port nothing is listening on and every connection is reset.
     ports:
-      - "3000:3000"
+      - "${MCP_PORT:-8080}:8080"
     environment:
       - NODE_ENV=production
       - MCP_TRANSPORT=${MCP_TRANSPORT:-http}
-      - MCP_PORT=3000
+      - MCP_PORT=8080
       - MCP_API_KEY=${MCP_API_KEY:-}
       - FALKORDB_HOST=falkordb
-      - FALKORDB_PORT=6379
+      - FALKORDB_PORT=${FALKORDB_PORT:-6379}
       - FALKORDB_USERNAME=${FALKORDB_USERNAME:-}
       - FALKORDB_PASSWORD=${FALKORDB_PASSWORD:-}
       - FALKORDB_DEFAULT_READONLY=${FALKORDB_DEFAULT_READONLY:-false}
