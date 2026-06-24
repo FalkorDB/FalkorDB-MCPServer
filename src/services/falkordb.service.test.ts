@@ -232,7 +232,7 @@ describe('FalkorDB Service', () => {
       
       // Assert
       expect(mockFalkorDB.mockSelectGraph).toHaveBeenCalledWith(graphName);
-      expect(mockFalkorDB.mockQuery).toHaveBeenCalledWith(query, params);
+      expect(mockFalkorDB.mockQuery).toHaveBeenCalledWith(query, { params });
       expect(mockFalkorDB.mockRoQuery).not.toHaveBeenCalled();
       expect(result).toEqual(expectedResult);
     });
@@ -278,7 +278,7 @@ describe('FalkorDB Service', () => {
       
       // Assert
       expect(mockFalkorDB.mockSelectGraph).toHaveBeenCalledWith(graphName);
-      expect(mockFalkorDB.mockRoQuery).toHaveBeenCalledWith(query, params);
+      expect(mockFalkorDB.mockRoQuery).toHaveBeenCalledWith(query, { params });
       expect(mockFalkorDB.mockQuery).not.toHaveBeenCalled();
       expect(result).toEqual(expectedResult);
     });
@@ -387,7 +387,7 @@ describe('FalkorDB Service', () => {
       
       // Assert
       expect(mockFalkorDB.mockSelectGraph).toHaveBeenCalledWith(graphName);
-      expect(mockFalkorDB.mockRoQuery).toHaveBeenCalledWith(query, params);
+      expect(mockFalkorDB.mockRoQuery).toHaveBeenCalledWith(query, { params });
       expect(mockFalkorDB.mockQuery).not.toHaveBeenCalled();
       expect(result).toEqual(expectedResult);
     });
