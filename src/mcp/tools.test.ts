@@ -56,10 +56,8 @@ describe('MCP Tools - Strict Read-Only Mode', () => {
 
     // Create a minimal mock server that captures tool handlers
     server = {
-      registerTool: jest.fn((name, schema, handler) => {
-        if (name === 'query_graph') {
-          queryGraphHandler = handler;
-        }
+      registerTool: jest.fn((name, _schema, handler) => {
+        if (name === 'query_graph') queryGraphHandler = handler;
       }),
     } as any;
 
@@ -255,7 +253,7 @@ describe('MCP Schema Tools', () => {
     jest.clearAllMocks();
 
     server = {
-      registerTool: jest.fn((name, schema, handler) => {
+      registerTool: jest.fn((name, _schema, handler) => {
         if (name === 'get_graph_schema') getGraphSchemaHandler = handler;
         if (name === 'get_node_schema') getNodePropertiesHandler = handler;
         if (name === 'get_relationship_schema') getRelationshipPropertiesHandler = handler;
