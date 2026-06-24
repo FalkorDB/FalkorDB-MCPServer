@@ -9,6 +9,7 @@ import { config } from '../config/index.js';
 const queryGraphSchema = {
   graphName: z.string().describe("The name of the graph to query"),
   query: z.string().describe("The OpenCypher query to run"),
+  params: z.record(z.string(), z.any()).optional().describe("Optional query parameters, referenced in the query as $name. Note: FalkorDB does not allow parameters in LIMIT/SKIP clauses."),
   readOnly: z.boolean().optional().describe("If true, executes as a read-only query (GRAPH.RO_QUERY). Useful for replica instances or to prevent accidental writes. Defaults to FALKORDB_DEFAULT_READONLY environment variable."),
 };
 
@@ -50,7 +51,7 @@ function registerQueryGraphTool(server: McpServer): void {
     },
     async (args: unknown) => {
       // Manual validation since we're using raw shape for registration
-      const {graphName, query, readOnly} = z.object(queryGraphSchema).parse(args);
+      const {graphName, query, params, readOnly} = z.object(queryGraphSchema).parse(args);
       
       try {
         if (!graphName?.trim()) {
@@ -81,7 +82,7 @@ function registerQueryGraphTool(server: McpServer): void {
           );
         }
 
-        const result = await falkorDBService.executeQuery(graphName, query, undefined, isReadOnly);
+        const result = await falkorDBService.executeQuery(graphName, query, params, isReadOnly);
         await logger.debug('Query tool executed successfully', { graphName, readOnly: isReadOnly });
 
         return {
