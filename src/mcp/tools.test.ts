@@ -244,3 +244,133 @@ describe('MCP Tools - Strict Read-Only Mode', () => {
     });
   });
 });
+
+describe('MCP Schema Tools', () => {
+  let server: McpServer;
+  let getGraphSchemaHandler: any;
+  let getNodePropertiesHandler: any;
+  let getRelationshipPropertiesHandler: any;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    server = {
+      registerTool: jest.fn((name, schema, handler) => {
+        if (name === 'get_graph_schema') getGraphSchemaHandler = handler;
+        if (name === 'get_node_schema') getNodePropertiesHandler = handler;
+        if (name === 'get_relationship_schema') getRelationshipPropertiesHandler = handler;
+      }),
+    } as any;
+
+    registerAllTools(server);
+  });
+
+  describe('get_graph_schema', () => {
+    it('should return schema with labels, relationship types, and connections', async () => {
+      (falkorDBService.executeQuery as jest.Mock)
+        .mockResolvedValueOnce({ data: [{ label: 'Person' }, { label: 'Movie' }] })
+        .mockResolvedValueOnce({ data: [{ relationshipType: 'ACTED_IN' }] })
+        .mockResolvedValueOnce({ data: [{ source: ['Person'], relationship: 'ACTED_IN', target: ['Movie'] }] });
+
+      const result = await getGraphSchemaHandler({ graphName: 'myGraph' });
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed.nodeLabels).toEqual(['Person', 'Movie']);
+      expect(parsed.relationshipTypes).toEqual(['ACTED_IN']);
+      expect(parsed.connections).toHaveLength(1);
+    });
+
+    it('should reject empty graph name', async () => {
+      await expect(getGraphSchemaHandler({ graphName: '' }))
+        .rejects.toThrow('Graph name is required and cannot be empty');
+    });
+  });
+
+  describe('get_node_properties', () => {
+    it('should aggregate properties across sampled nodes ranked by frequency', async () => {
+      (falkorDBService.executeQuery as jest.Mock).mockResolvedValue({
+        data: [
+          { property: 'name', frequency: 98 },
+          { property: 'age', frequency: 45 },
+          { property: 'nickname', frequency: 3 },
+        ]
+      });
+
+      const result = await getNodePropertiesHandler({ graphName: 'myGraph', label: 'Person' });
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(falkorDBService.executeQuery).toHaveBeenCalledWith(
+        'myGraph',
+        'MATCH (n:Person) WITH n LIMIT 100 UNWIND keys(n) AS property RETURN property, count(*) AS frequency ORDER BY frequency DESC'
+      );
+      expect(parsed.label).toBe('Person');
+      expect(parsed.sampleSize).toBe(100);
+      expect(parsed.properties[0]).toEqual({ property: 'name', frequency: 98 });
+      expect(parsed.properties[2]).toEqual({ property: 'nickname', frequency: 3 });
+    });
+
+    it('should respect a custom sampleSize', async () => {
+      (falkorDBService.executeQuery as jest.Mock).mockResolvedValue({ data: [] });
+
+      await getNodePropertiesHandler({ graphName: 'myGraph', label: 'Person', sampleSize: 500 });
+
+      expect(falkorDBService.executeQuery).toHaveBeenCalledWith(
+        'myGraph',
+        'MATCH (n:Person) WITH n LIMIT 500 UNWIND keys(n) AS property RETURN property, count(*) AS frequency ORDER BY frequency DESC'
+      );
+    });
+
+    it('should reject invalid label characters', async () => {
+      await expect(getNodePropertiesHandler({ graphName: 'myGraph', label: 'Person; DROP' }))
+        .rejects.toThrow();
+    });
+
+    it('should reject empty graph name', async () => {
+      await expect(getNodePropertiesHandler({ graphName: '', label: 'Person' }))
+        .rejects.toThrow('Graph name is required and cannot be empty');
+    });
+  });
+
+  describe('get_relationship_properties', () => {
+    it('should aggregate properties across sampled relationships ranked by frequency', async () => {
+      (falkorDBService.executeQuery as jest.Mock).mockResolvedValue({
+        data: [
+          { property: 'role', frequency: 72 },
+          { property: 'year', frequency: 18 },
+        ]
+      });
+
+      const result = await getRelationshipPropertiesHandler({ graphName: 'myGraph', relationshipType: 'ACTED_IN' });
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(falkorDBService.executeQuery).toHaveBeenCalledWith(
+        'myGraph',
+        'MATCH ()-[r:ACTED_IN]->() WITH r LIMIT 100 UNWIND keys(r) AS property RETURN property, count(*) AS frequency ORDER BY frequency DESC'
+      );
+      expect(parsed.relationshipType).toBe('ACTED_IN');
+      expect(parsed.sampleSize).toBe(100);
+      expect(parsed.properties[0]).toEqual({ property: 'role', frequency: 72 });
+    });
+
+    it('should respect a custom sampleSize', async () => {
+      (falkorDBService.executeQuery as jest.Mock).mockResolvedValue({ data: [] });
+
+      await getRelationshipPropertiesHandler({ graphName: 'myGraph', relationshipType: 'ACTED_IN', sampleSize: 250 });
+
+      expect(falkorDBService.executeQuery).toHaveBeenCalledWith(
+        'myGraph',
+        'MATCH ()-[r:ACTED_IN]->() WITH r LIMIT 250 UNWIND keys(r) AS property RETURN property, count(*) AS frequency ORDER BY frequency DESC'
+      );
+    });
+
+    it('should reject invalid relationship type characters', async () => {
+      await expect(getRelationshipPropertiesHandler({ graphName: 'myGraph', relationshipType: 'ACTED_IN; DROP' }))
+        .rejects.toThrow();
+    });
+
+    it('should reject empty graph name', async () => {
+      await expect(getRelationshipPropertiesHandler({ graphName: '', relationshipType: 'ACTED_IN' }))
+        .rejects.toThrow('Graph name is required and cannot be empty');
+    });
+  });
+});

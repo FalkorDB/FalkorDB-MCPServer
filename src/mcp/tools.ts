@@ -22,6 +22,22 @@ const deleteGraphSchema = {
   confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
 };
 
+const getGraphSchemaSchema = {
+  graphName: z.string().describe("Name of the graph. Use the list_graphs tool to discover available graphs."),
+};
+
+const getNodeSchemaSchema = {
+  graphName: z.string().describe("Name of the graph. Use the list_graphs tool to discover available graphs."),
+  label: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).describe("Node label to inspect"),
+  sampleSize: z.number().int().min(1).max(10000).optional().describe("Number of nodes to sample (default: 100). Larger values improve property coverage at the cost of query time."),
+};
+
+const getRelationshipSchemaSchema = {
+  graphName: z.string().describe("Name of the graph. Use the list_graphs tool to discover available graphs."),
+  relationshipType: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).describe("Relationship type to inspect"),
+  sampleSize: z.number().int().min(1).max(10000).optional().describe("Number of relationships to sample (default: 100). Larger values improve property coverage at the cost of query time."),
+};
+
 function registerQueryGraphTool(server: McpServer): void {
   server.registerTool(
     "query_graph",
@@ -199,10 +215,145 @@ function registerDeleteGraphTool(server: McpServer): void {
 }
 
 
+function registerGetGraphSchemaTool(server: McpServer): void {
+  server.registerTool(
+    "get_graph_schema",
+    {
+      title: "Get Graph Schema",
+      description: "Get the schema of a graph including node labels and relationship types to understand the graph structure before executing a query.",
+      inputSchema: getGraphSchemaSchema as any,
+    },
+    async (args: unknown) => {
+      const { graphName } = z.object(getGraphSchemaSchema).parse(args);
+      try {
+        if (!graphName?.trim()) {
+          throw new AppError(CommonErrors.INVALID_INPUT, 'Graph name is required and cannot be empty', true);
+        }
+
+        const labelsResult = await falkorDBService.executeQuery(graphName, "CALL db.labels()") as any;
+        const labels = labelsResult.data.map((r: any) => r['label']);
+
+        const typesResult = await falkorDBService.executeQuery(graphName, "CALL db.relationshipTypes()") as any;
+        const relationshipTypes = typesResult.data.map((r: any) => r['relationshipType']);
+
+        const schemaResult = await falkorDBService.executeQuery(
+          graphName,
+          "MATCH (a)-[r]->(b) RETURN DISTINCT labels(a) as source, type(r) as relationship, labels(b) as target"
+        ) as any;
+
+        const schema = {
+          nodeLabels: labels,
+          relationshipTypes,
+          connections: schemaResult.data,
+        };
+
+        await logger.debug('Get graph schema tool executed successfully', { graphName });
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify(schema, null, 2)
+          }]
+        };
+      } catch (error) {
+        await logger.error('Get graph schema tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName });
+        throw error;
+      }
+    }
+  );
+}
+
+function registerGetNodeSchemaTool(server: McpServer): void {
+  server.registerTool(
+    "get_node_schema",
+    {
+      title: "Get Node Schema",
+      description: "Sample up to N nodes of a given label and aggregate their property keys by how many nodes carry each one (descending). Use this before adding a new property to verify a similar one does not already exist — especially valuable in schemaless graphs where property naming can drift across subsets of nodes.",
+      inputSchema: getNodeSchemaSchema as any,
+    },
+    async (args: unknown) => {
+      const { graphName, label, sampleSize = 100 } = z.object(getNodeSchemaSchema).parse(args);
+      try {
+        if (!graphName?.trim()) {
+          throw new AppError(CommonErrors.INVALID_INPUT, 'Graph name is required and cannot be empty', true);
+        }
+
+        const result = await falkorDBService.executeQuery(
+          graphName,
+          `MATCH (n:${label}) WITH n LIMIT ${sampleSize} UNWIND keys(n) AS property RETURN property, count(*) AS frequency ORDER BY frequency DESC`
+        ) as any;
+
+        const response = {
+          label,
+          sampleSize,
+          properties: result.data,
+        };
+
+        await logger.debug('Get node schema tool executed successfully', { graphName, label, sampleSize });
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify(response, null, 2)
+          }]
+        };
+      } catch (error) {
+        await logger.error('Get node schema tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, label });
+        throw error;
+      }
+    }
+  );
+}
+
+function registerGetRelationshipSchemaTool(server: McpServer): void {
+  server.registerTool(
+    "get_relationship_schema",
+    {
+      title: "Get Relationship Schema",
+      description: "Sample up to N relationships of a given type and aggregate their property keys by how many relationships carry each one (descending). Use this before adding a new property to verify a similar one does not already exist — especially valuable in schemaless graphs where property naming can drift across subsets of relationships.",
+      inputSchema: getRelationshipSchemaSchema as any,
+    },
+    async (args: unknown) => {
+      const { graphName, relationshipType, sampleSize = 100 } = z.object(getRelationshipSchemaSchema).parse(args);
+      try {
+        if (!graphName?.trim()) {
+          throw new AppError(CommonErrors.INVALID_INPUT, 'Graph name is required and cannot be empty', true);
+        }
+
+        const result = await falkorDBService.executeQuery(
+          graphName,
+          `MATCH ()-[r:${relationshipType}]->() WITH r LIMIT ${sampleSize} UNWIND keys(r) AS property RETURN property, count(*) AS frequency ORDER BY frequency DESC`
+        ) as any;
+
+        const response = {
+          relationshipType,
+          sampleSize,
+          properties: result.data,
+        };
+
+        await logger.debug('Get relationship schema tool executed successfully', { graphName, relationshipType, sampleSize });
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify(response, null, 2)
+          }]
+        };
+      } catch (error) {
+        await logger.error('Get relationship schema tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, relationshipType });
+        throw error;
+      }
+    }
+  );
+}
+
 export default function registerAllTools(server: McpServer): void {
   // Register query_graph tools
   registerQueryGraphTool(server);
   registerQueryGraphReadOnlyTool(server);
   registerListGraphsTool(server);
   registerDeleteGraphTool(server);
+  registerGetGraphSchemaTool(server);
+  registerGetNodeSchemaTool(server);
+  registerGetRelationshipSchemaTool(server);
 }
