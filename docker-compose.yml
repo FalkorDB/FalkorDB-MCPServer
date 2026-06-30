@@ -23,7 +23,10 @@ services:
         exec /var/lib/falkordb/bin/run.sh
     ports:
       - "${FALKORDB_PORT:-6379}:6379"
-      - "${FALKORDB_WEB_PORT:-3000}:3000"
+      # Web UI bound to 127.0.0.1 by default: it has no auth of its own, so a
+      # wildcard bind would expose it to the network. Override to reach it
+      # remotely (e.g. "0.0.0.0:${FALKORDB_WEB_PORT:-3000}:3000").
+      - "127.0.0.1:${FALKORDB_WEB_PORT:-3000}:3000"
     volumes:
       - falkordb-data:/data
     networks:
@@ -31,7 +34,9 @@ services:
     healthcheck:
       # Authenticate the healthcheck too, or ping returns NOAUTH once a password
       # is set and the MCP server's `depends_on: service_healthy` never unblocks.
-      test: ["CMD-SHELL", "redis-cli $${FALKORDB_PASSWORD:+-a $$FALKORDB_PASSWORD} ping | grep -q PONG"]
+      # Pass the password via REDISCLI_AUTH (only when set) so it is never split on
+      # whitespace or reinterpreted by the shell; compare the captured reply to PONG.
+      test: ["CMD-SHELL", "[ -n \"$$FALKORDB_PASSWORD\" ] && export REDISCLI_AUTH=\"$$FALKORDB_PASSWORD\"; [ \"$$(redis-cli ping)\" = \"PONG\" ]"]
       interval: 10s
       timeout: 5s
       retries: 5
