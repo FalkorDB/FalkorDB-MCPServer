@@ -182,9 +182,19 @@ There's also a dedicated `query_graph_readonly` tool that always executes querie
 ### 📊 Explore Structure
 ```text
 "List all available graphs"
-"Show me the structure of the user_data graph"
+"Show me the schema of the movies graph"
+"What properties do Person nodes usually have in the movies graph?"
+"What properties are on ACTED_IN relationships?"
 "Delete the old_test graph"
 ```
+
+**Schema discovery:** FalkorDB is schemaless, so three tools help an agent orient itself before querying:
+- `get_graph_schema` — returns node labels, relationship types, and (optionally) the connection topology (`source label → relationship type → target label`). Topology is derived from a bounded sample of relationships (`connectionSampleSize`, default `10000`) and can be turned off with `includeConnections: false` on very large graphs.
+- `get_node_schema` / `get_relationship_schema` — sample up to `sampleSize` (default `100`) nodes/relationships of a given label/type and rank their property keys by frequency, returning the actual `sampledCount` alongside `requestedSampleSize`. Useful for spotting property naming drift.
+
+All three schema tools always execute read-only (`GRAPH.RO_QUERY`), so they are safe to run against replica/read-only deployments.
+
+A typical orientation workflow is: `list_graphs → get_graph_schema → get_node_schema / get_relationship_schema → query_graph`.
 
 ## 🛠️ Development
 
