@@ -24,6 +24,8 @@ const deleteGraphSchema = {
 
 const getGraphSchemaSchema = {
   graphName: z.string().describe("Name of the graph. Use the list_graphs tool to discover available graphs."),
+  includeConnections: z.boolean().optional().describe("If true (default), include the relationship connection topology (source label → relationship type → target label). This is derived from a bounded sample of relationships; set to false to skip it entirely on very large graphs to reduce cost and response size."),
+  connectionSampleSize: z.number().int().min(1).max(100000).optional().describe("Maximum number of relationships to scan when deriving connection topology (default: 10000). Bounds query cost on large graphs; topology derived from the sample may be incomplete if the graph has more relationships than this."),
 };
 
 const getNodeSchemaSchema = {
@@ -220,34 +222,43 @@ function registerGetGraphSchemaTool(server: McpServer): void {
     "get_graph_schema",
     {
       title: "Get Graph Schema",
-      description: "Get the schema of a graph including node labels and relationship types to understand the graph structure before executing a query.",
+      description: "Get the schema of a graph including node labels, relationship types, and (optionally) the connection topology between them, to understand the graph structure before executing a query. Connection topology is derived from a bounded sample of relationships and can be disabled via includeConnections on very large graphs.",
       inputSchema: getGraphSchemaSchema as any,
     },
     async (args: unknown) => {
-      const { graphName } = z.object(getGraphSchemaSchema).parse(args);
+      const { graphName, includeConnections = true, connectionSampleSize = 10000 } = z.object(getGraphSchemaSchema).parse(args);
       try {
         if (!graphName?.trim()) {
           throw new AppError(CommonErrors.INVALID_INPUT, 'Graph name is required and cannot be empty', true);
         }
 
-        const labelsResult = await falkorDBService.executeQuery(graphName, "CALL db.labels()") as any;
+        const labelsResult = await falkorDBService.executeReadOnlyQuery(graphName, "CALL db.labels()") as any;
         const labels = labelsResult.data.map((r: any) => r['label']);
 
-        const typesResult = await falkorDBService.executeQuery(graphName, "CALL db.relationshipTypes()") as any;
+        const typesResult = await falkorDBService.executeReadOnlyQuery(graphName, "CALL db.relationshipTypes()") as any;
         const relationshipTypes = typesResult.data.map((r: any) => r['relationshipType']);
 
-        const schemaResult = await falkorDBService.executeQuery(
-          graphName,
-          "MATCH (a)-[r]->(b) RETURN DISTINCT labels(a) as source, type(r) as relationship, labels(b) as target"
-        ) as any;
-
-        const schema = {
+        const schema: {
+          nodeLabels: string[];
+          relationshipTypes: string[];
+          connections: unknown[];
+          connectionSampleSize?: number;
+        } = {
           nodeLabels: labels,
           relationshipTypes,
-          connections: schemaResult.data,
+          connections: [],
         };
 
-        await logger.debug('Get graph schema tool executed successfully', { graphName });
+        if (includeConnections) {
+          const schemaResult = await falkorDBService.executeReadOnlyQuery(
+            graphName,
+            `MATCH (a)-[r]->(b) WITH a, r, b LIMIT ${connectionSampleSize} RETURN DISTINCT labels(a) AS source, type(r) AS relationship, labels(b) AS target`
+          ) as any;
+          schema.connections = schemaResult.data;
+          schema.connectionSampleSize = connectionSampleSize;
+        }
+
+        await logger.debug('Get graph schema tool executed successfully', { graphName, includeConnections });
 
         return {
           content: [{
@@ -268,7 +279,7 @@ function registerGetNodeSchemaTool(server: McpServer): void {
     "get_node_schema",
     {
       title: "Get Node Schema",
-      description: "Sample up to N nodes of a given label and aggregate their property keys by how many nodes carry each one (descending). Use this before adding a new property to verify a similar one does not already exist — especially valuable in schemaless graphs where property naming can drift across subsets of nodes.",
+      description: "Sample up to N nodes of a given label and aggregate their property keys by how many nodes carry each one (descending). Interpret each property's frequency relative to the returned sampledCount (the actual number of nodes sampled, which may be less than requestedSampleSize) to detect naming drift — e.g. a property present on only a few of many sampled nodes likely duplicates another under a slightly different name. Especially valuable in schemaless graphs where property naming can drift across subsets of nodes.",
       inputSchema: getNodeSchemaSchema as any,
     },
     async (args: unknown) => {
@@ -278,18 +289,25 @@ function registerGetNodeSchemaTool(server: McpServer): void {
           throw new AppError(CommonErrors.INVALID_INPUT, 'Graph name is required and cannot be empty', true);
         }
 
-        const result = await falkorDBService.executeQuery(
+        const result = await falkorDBService.executeReadOnlyQuery(
           graphName,
           `MATCH (n:${label}) WITH n LIMIT ${sampleSize} UNWIND keys(n) AS property RETURN property, count(*) AS frequency ORDER BY frequency DESC`
         ) as any;
 
+        const countResult = await falkorDBService.executeReadOnlyQuery(
+          graphName,
+          `MATCH (n:${label}) WITH n LIMIT ${sampleSize} RETURN count(n) AS sampledCount`
+        ) as any;
+        const sampledCount = countResult.data?.[0]?.sampledCount ?? 0;
+
         const response = {
           label,
-          sampleSize,
+          requestedSampleSize: sampleSize,
+          sampledCount,
           properties: result.data,
         };
 
-        await logger.debug('Get node schema tool executed successfully', { graphName, label, sampleSize });
+        await logger.debug('Get node schema tool executed successfully', { graphName, label, sampleSize, sampledCount });
 
         return {
           content: [{
@@ -310,7 +328,7 @@ function registerGetRelationshipSchemaTool(server: McpServer): void {
     "get_relationship_schema",
     {
       title: "Get Relationship Schema",
-      description: "Sample up to N relationships of a given type and aggregate their property keys by how many relationships carry each one (descending). Use this before adding a new property to verify a similar one does not already exist — especially valuable in schemaless graphs where property naming can drift across subsets of relationships.",
+      description: "Sample up to N relationships of a given type and aggregate their property keys by how many relationships carry each one (descending). Interpret each property's frequency relative to the returned sampledCount (the actual number of relationships sampled, which may be less than requestedSampleSize) to detect naming drift — e.g. a property present on only a few of many sampled relationships likely duplicates another under a slightly different name. Especially valuable in schemaless graphs where property naming can drift across subsets of relationships.",
       inputSchema: getRelationshipSchemaSchema as any,
     },
     async (args: unknown) => {
@@ -320,18 +338,25 @@ function registerGetRelationshipSchemaTool(server: McpServer): void {
           throw new AppError(CommonErrors.INVALID_INPUT, 'Graph name is required and cannot be empty', true);
         }
 
-        const result = await falkorDBService.executeQuery(
+        const result = await falkorDBService.executeReadOnlyQuery(
           graphName,
           `MATCH ()-[r:${relationshipType}]->() WITH r LIMIT ${sampleSize} UNWIND keys(r) AS property RETURN property, count(*) AS frequency ORDER BY frequency DESC`
         ) as any;
 
+        const countResult = await falkorDBService.executeReadOnlyQuery(
+          graphName,
+          `MATCH ()-[r:${relationshipType}]->() WITH r LIMIT ${sampleSize} RETURN count(r) AS sampledCount`
+        ) as any;
+        const sampledCount = countResult.data?.[0]?.sampledCount ?? 0;
+
         const response = {
           relationshipType,
-          sampleSize,
+          requestedSampleSize: sampleSize,
+          sampledCount,
           properties: result.data,
         };
 
-        await logger.debug('Get relationship schema tool executed successfully', { graphName, relationshipType, sampleSize });
+        await logger.debug('Get relationship schema tool executed successfully', { graphName, relationshipType, sampleSize, sampledCount });
 
         return {
           content: [{
