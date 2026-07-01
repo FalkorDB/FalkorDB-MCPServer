@@ -232,7 +232,7 @@ describe('FalkorDB Service', () => {
       
       // Assert
       expect(mockFalkorDB.mockSelectGraph).toHaveBeenCalledWith(graphName);
-      expect(mockFalkorDB.mockQuery).toHaveBeenCalledWith(query, params);
+      expect(mockFalkorDB.mockQuery).toHaveBeenCalledWith(query, { params });
       expect(mockFalkorDB.mockRoQuery).not.toHaveBeenCalled();
       expect(result).toEqual(expectedResult);
     });
@@ -259,6 +259,27 @@ describe('FalkorDB Service', () => {
       expect(result).toEqual(expectedResult);
     });
 
+    it('should treat an empty params object as no params (undefined options)', async () => {
+      // Arrange
+      const graphName = 'testGraph';
+      const query = 'MATCH (n) RETURN n';
+      const expectedResult = { records: [{ id: 1 }] };
+
+      mockFalkorDB.mockQuery.mockResolvedValue(expectedResult);
+
+      // Force client to be available
+      (falkorDBService as any).client = {
+        selectGraph: mockFalkorDB.mockSelectGraph
+      };
+
+      // Act — empty object must not become { params: {} } (which would alter the CYPHER preamble)
+      const result = await falkorDBService.executeQuery(graphName, query, {});
+
+      // Assert
+      expect(mockFalkorDB.mockQuery).toHaveBeenCalledWith(query, undefined);
+      expect(result).toEqual(expectedResult);
+    });
+
     it('should execute a read-only query when readOnly flag is true', async () => {
       // Arrange
       const graphName = 'testGraph';
@@ -278,7 +299,7 @@ describe('FalkorDB Service', () => {
       
       // Assert
       expect(mockFalkorDB.mockSelectGraph).toHaveBeenCalledWith(graphName);
-      expect(mockFalkorDB.mockRoQuery).toHaveBeenCalledWith(query, params);
+      expect(mockFalkorDB.mockRoQuery).toHaveBeenCalledWith(query, { params });
       expect(mockFalkorDB.mockQuery).not.toHaveBeenCalled();
       expect(result).toEqual(expectedResult);
     });
@@ -387,7 +408,7 @@ describe('FalkorDB Service', () => {
       
       // Assert
       expect(mockFalkorDB.mockSelectGraph).toHaveBeenCalledWith(graphName);
-      expect(mockFalkorDB.mockRoQuery).toHaveBeenCalledWith(query, params);
+      expect(mockFalkorDB.mockRoQuery).toHaveBeenCalledWith(query, { params });
       expect(mockFalkorDB.mockQuery).not.toHaveBeenCalled();
       expect(result).toEqual(expectedResult);
     });

@@ -110,15 +110,16 @@ class FalkorDBService {
 
     try {
       const graph = this.client.selectGraph(graphName);
-      const result = readOnly 
-        ? await graph.roQuery(query, params)
-        : await graph.query(query, params);
+      const options = params && Object.keys(params).length > 0 ? { params } : undefined;
+      const result = readOnly
+        ? await graph.roQuery(query, options)
+        : await graph.query(query, options);
       
       // Fire-and-forget: informational log, not critical
       logger.debug('Query executed successfully', {
         graphName,
         query: query.substring(0, 100) + (query.length > 100 ? '...' : ''),
-        hasParams: !!params,
+        hasParams: options !== undefined,
         readOnly
       });
       

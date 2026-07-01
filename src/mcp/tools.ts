@@ -5,16 +5,50 @@ import { logger } from '../services/logger.service.js';
 import { AppError, CommonErrors } from '../errors/AppError.js';
 import { config } from '../config/index.js';
 
+// FalkorDB query parameter values: JSON-like primitives, arrays, and maps.
+// Parameter names — and nested map keys — must be valid identifiers because the
+// FalkorDB driver interpolates them directly into the CYPHER preamble WITHOUT
+// escaping (only values are escaped). Validating keys here closes a Cypher
+// injection vector that would otherwise defeat the purpose of parameterization.
+type QueryParamValue =
+  | string
+  | number
+  | boolean
+  | null
+  | QueryParamValue[]
+  | { [key: string]: QueryParamValue };
+
+const paramIdentifierKey = z.string().regex(
+  /^[A-Za-z_][A-Za-z0-9_]*$/,
+  "Parameter names must be valid identifiers (letters, digits, underscore; must not start with a digit)."
+);
+
+const queryParamValueSchema: z.ZodType<QueryParamValue> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(queryParamValueSchema),
+    z.record(paramIdentifierKey, queryParamValueSchema),
+  ])
+);
+
+const queryParamsSchema = z.record(paramIdentifierKey, queryParamValueSchema).optional()
+  .describe("Optional query parameters, referenced in the query as $name. Parameter names (including nested map keys) must be valid identifiers. Note: FalkorDB does not allow parameters in LIMIT/SKIP clauses.");
+
 // Define schemas as simple objects first to avoid TS2589 deep recursion
 const queryGraphSchema = {
   graphName: z.string().describe("The name of the graph to query"),
   query: z.string().describe("The OpenCypher query to run"),
+  params: queryParamsSchema,
   readOnly: z.boolean().optional().describe("If true, executes as a read-only query (GRAPH.RO_QUERY). Useful for replica instances or to prevent accidental writes. Defaults to FALKORDB_DEFAULT_READONLY environment variable."),
 };
 
 const queryGraphReadOnlySchema = {
   graphName: z.string().describe("The name of the graph to query"),
   query: z.string().describe("The read-only OpenCypher query to run (write operations will fail)"),
+  params: queryParamsSchema,
 };
 
 const deleteGraphSchema = {
@@ -50,7 +84,7 @@ function registerQueryGraphTool(server: McpServer): void {
     },
     async (args: unknown) => {
       // Manual validation since we're using raw shape for registration
-      const {graphName, query, readOnly} = z.object(queryGraphSchema).parse(args);
+      const {graphName, query, params, readOnly} = z.object(queryGraphSchema).parse(args);
       
       try {
         if (!graphName?.trim()) {
@@ -81,7 +115,7 @@ function registerQueryGraphTool(server: McpServer): void {
           );
         }
 
-        const result = await falkorDBService.executeQuery(graphName, query, undefined, isReadOnly);
+        const result = await falkorDBService.executeQuery(graphName, query, params, isReadOnly);
         await logger.debug('Query tool executed successfully', { graphName, readOnly: isReadOnly });
 
         return {
@@ -107,7 +141,7 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
       inputSchema: queryGraphReadOnlySchema as any,
     },
     async (args: unknown) => {
-      const {graphName, query} = z.object(queryGraphReadOnlySchema).parse(args);
+      const {graphName, query, params} = z.object(queryGraphReadOnlySchema).parse(args);
       try {
         if (!graphName?.trim()) {
           throw new AppError(
@@ -125,7 +159,7 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
           );
         }
         
-        const result = await falkorDBService.executeReadOnlyQuery(graphName, query);
+        const result = await falkorDBService.executeReadOnlyQuery(graphName, query, params);
         await logger.debug('Read-only query tool executed successfully', { graphName });
         
         return {

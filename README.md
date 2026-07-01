@@ -173,6 +173,8 @@ Once connected, you can ask Claude to:
 
 There's also a dedicated `query_graph_readonly` tool that always executes queries in read-only mode.
 
+**Parameterized queries:** The `query_graph` and `query_graph_readonly` tools accept an optional `params` object so values can be passed separately from the query text (referenced as `$name`), instead of string-concatenating them into Cypher. This avoids query-injection risks and malformed queries. For example, a query of `MATCH (p:Person {name: $name}) RETURN p` with `params: { "name": "Alice" }`. Parameter names (including nested map keys) must be valid identifiers. Note: FalkorDB does not allow parameters in `LIMIT`/`SKIP` clauses.
+
 ### 📝 Manage Data
 ```text
 "Create a new person named Alice who knows Bob"
