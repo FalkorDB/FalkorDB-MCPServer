@@ -119,7 +119,7 @@ class FalkorDBService {
       logger.debug('Query executed successfully', {
         graphName,
         query: query.substring(0, 100) + (query.length > 100 ? '...' : ''),
-        hasParams: !!params,
+        hasParams: options !== undefined,
         readOnly
       });
       
