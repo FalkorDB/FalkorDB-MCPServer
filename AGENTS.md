@@ -75,11 +75,6 @@ src/
 | `get_relationship_schema` | Sample relationships of a type and rank their property keys by frequency |
 
 Schema-discovery tools (`get_graph_schema`, `get_node_schema`, `get_relationship_schema`) always execute via `executeReadOnlyQuery` (`GRAPH.RO_QUERY`), since discovery is inherently read-only and must work on replica/read-only deployments.
-| `get_graph_schema` | Get node labels, relationship types, and (optional, bounded) connection topology for a graph |
-| `get_node_schema` | Sample nodes of a label and rank their property keys by frequency (reveals the de-facto schema) |
-| `get_relationship_schema` | Sample relationships of a type and rank their property keys by frequency |
-
-Schema-discovery tools (`get_graph_schema`, `get_node_schema`, `get_relationship_schema`) always execute via `executeReadOnlyQuery` (`GRAPH.RO_QUERY`), since discovery is inherently read-only and must work on replica/read-only deployments.
 
 ### MCP Resources
 - `graph_list` — provides a markdown-formatted listing of all graphs

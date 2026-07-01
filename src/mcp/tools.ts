@@ -24,7 +24,7 @@ const deleteGraphSchema = {
 
 const getGraphSchemaSchema = {
   graphName: z.string().describe("Name of the graph. Use the list_graphs tool to discover available graphs."),
-  includeConnections: z.boolean().optional().describe("If true (default), include the relationship connection topology (source label → relationship type → target label). This is derived from a bounded sample of relationships; set to false to skip it entirely on very large graphs to reduce cost and response size."),
+  includeConnections: z.boolean().optional().describe("If true (default), include the relationship connection topology. Each connection is { source, relationship, target } where source and target are arrays of node labels (a node may have multiple labels) and relationship is the relationship type. Derived from a bounded sample of relationships; set to false to skip it entirely on very large graphs to reduce cost and response size."),
   connectionSampleSize: z.number().int().min(1).max(100000).optional().describe("Maximum number of relationships to scan when deriving connection topology (default: 10000). Bounds query cost on large graphs; topology derived from the sample may be incomplete if the graph has more relationships than this."),
 };
 
