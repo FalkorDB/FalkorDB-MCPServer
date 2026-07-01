@@ -110,7 +110,7 @@ class FalkorDBService {
 
     try {
       const graph = this.client.selectGraph(graphName);
-      const options = params ? { params } : undefined;
+      const options = params && Object.keys(params).length > 0 ? { params } : undefined;
       const result = readOnly
         ? await graph.roQuery(query, options)
         : await graph.query(query, options);

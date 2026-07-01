@@ -573,6 +573,61 @@ describe('MCP Tools - query_graph params handling', () => {
       false
     );
   });
+
+  it('should forward params on the read-only path (readOnly: true)', async () => {
+    (falkorDBService.executeQuery as jest.Mock).mockResolvedValue({ data: [] });
+
+    await queryGraphHandler({
+      graphName: 'test',
+      query: 'MATCH (n:Person {name: $name}) RETURN n',
+      params: { name: 'Alice' },
+      readOnly: true,
+    });
+
+    expect(falkorDBService.executeQuery).toHaveBeenCalledWith(
+      'test',
+      'MATCH (n:Person {name: $name}) RETURN n',
+      { name: 'Alice' },
+      true
+    );
+  });
+
+  it('should reject invalid param names (injection attempt via key)', async () => {
+    await expect(queryGraphHandler({
+      graphName: 'test',
+      query: 'MATCH (n) RETURN n',
+      params: { 'x MATCH (n) DELETE n //': 'v' },
+    })).rejects.toThrow();
+
+    expect(falkorDBService.executeQuery).not.toHaveBeenCalled();
+  });
+
+  it('should reject invalid nested map param keys', async () => {
+    await expect(queryGraphHandler({
+      graphName: 'test',
+      query: 'MATCH (n) RETURN n',
+      params: { filter: { 'y=1 //': 2 } },
+    })).rejects.toThrow();
+
+    expect(falkorDBService.executeQuery).not.toHaveBeenCalled();
+  });
+
+  it('should accept nested map params with valid identifier keys', async () => {
+    (falkorDBService.executeQuery as jest.Mock).mockResolvedValue({ data: [] });
+
+    await queryGraphHandler({
+      graphName: 'test',
+      query: 'MATCH (n:Person) WHERE n.age > $filter.minAge RETURN n',
+      params: { filter: { minAge: 18, tags: ['a', 'b'] } },
+    });
+
+    expect(falkorDBService.executeQuery).toHaveBeenCalledWith(
+      'test',
+      'MATCH (n:Person) WHERE n.age > $filter.minAge RETURN n',
+      { filter: { minAge: 18, tags: ['a', 'b'] } },
+      false
+    );
+  });
 });
 
 describe('MCP Tools - query_graph_readonly', () => {
@@ -603,11 +658,38 @@ describe('MCP Tools - query_graph_readonly', () => {
 
     expect(falkorDBService.executeReadOnlyQuery).toHaveBeenCalledWith(
       'myGraph',
-      'MATCH (n:Person) RETURN n'
+      'MATCH (n:Person) RETURN n',
+      undefined
     );
     expect(falkorDBService.executeQuery).not.toHaveBeenCalled();
     const parsed = JSON.parse(result.content[0].text);
     expect(parsed.data[0].n.name).toBe('Alice');
+  });
+
+  it('should forward params to executeReadOnlyQuery', async () => {
+    (falkorDBService.executeReadOnlyQuery as jest.Mock).mockResolvedValue({ data: [], metadata: [] });
+
+    await queryGraphReadonlyHandler({
+      graphName: 'myGraph',
+      query: 'MATCH (n:Person {name: $name}) RETURN n',
+      params: { name: 'Alice' },
+    });
+
+    expect(falkorDBService.executeReadOnlyQuery).toHaveBeenCalledWith(
+      'myGraph',
+      'MATCH (n:Person {name: $name}) RETURN n',
+      { name: 'Alice' }
+    );
+  });
+
+  it('should reject invalid param names (injection attempt via key)', async () => {
+    await expect(queryGraphReadonlyHandler({
+      graphName: 'myGraph',
+      query: 'MATCH (n) RETURN n',
+      params: { 'x MATCH (n) DELETE n //': 'v' },
+    })).rejects.toThrow();
+
+    expect(falkorDBService.executeReadOnlyQuery).not.toHaveBeenCalled();
   });
 
   it('should reject empty graph name', async () => {
