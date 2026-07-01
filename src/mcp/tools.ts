@@ -233,10 +233,10 @@ function registerGetGraphSchemaTool(server: McpServer): void {
         }
 
         const labelsResult = await falkorDBService.executeReadOnlyQuery(graphName, "CALL db.labels()") as any;
-        const labels = labelsResult.data.map((r: any) => r['label']);
+        const labels = (labelsResult.data ?? []).map((r: any) => r['label']);
 
         const typesResult = await falkorDBService.executeReadOnlyQuery(graphName, "CALL db.relationshipTypes()") as any;
-        const relationshipTypes = typesResult.data.map((r: any) => r['relationshipType']);
+        const relationshipTypes = (typesResult.data ?? []).map((r: any) => r['relationshipType']);
 
         const schema: {
           nodeLabels: string[];
@@ -254,7 +254,7 @@ function registerGetGraphSchemaTool(server: McpServer): void {
             graphName,
             `MATCH (a)-[r]->(b) WITH a, r, b LIMIT ${connectionSampleSize} RETURN DISTINCT labels(a) AS source, type(r) AS relationship, labels(b) AS target`
           ) as any;
-          schema.connections = schemaResult.data;
+          schema.connections = schemaResult.data ?? [];
           schema.connectionSampleSize = connectionSampleSize;
         }
 
@@ -304,7 +304,7 @@ function registerGetNodeSchemaTool(server: McpServer): void {
           label,
           requestedSampleSize: sampleSize,
           sampledCount,
-          properties: result.data,
+          properties: result.data ?? [],
         };
 
         await logger.debug('Get node schema tool executed successfully', { graphName, label, sampleSize, sampledCount });
@@ -353,7 +353,7 @@ function registerGetRelationshipSchemaTool(server: McpServer): void {
           relationshipType,
           requestedSampleSize: sampleSize,
           sampledCount,
-          properties: result.data,
+          properties: result.data ?? [],
         };
 
         await logger.debug('Get relationship schema tool executed successfully', { graphName, relationshipType, sampleSize, sampledCount });

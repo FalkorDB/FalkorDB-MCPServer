@@ -252,6 +252,15 @@ describe('MCP Schema Tools', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // Reset shared mock config so these tests don't depend on state left by
+    // earlier describe blocks (prevents order-dependent flakes).
+    mockConfig = {
+      falkorDB: {
+        defaultReadOnly: false,
+        strictReadOnly: false,
+      }
+    };
+
     server = {
       registerTool: jest.fn((name, _schema, handler) => {
         if (name === 'get_graph_schema') getGraphSchemaHandler = handler;
@@ -326,6 +335,21 @@ describe('MCP Schema Tools', () => {
       );
     });
 
+    it('should not throw when the driver returns a result without a data field', async () => {
+      // falkordb GraphReply.data is optional (undefined for empty replies)
+      (falkorDBService.executeReadOnlyQuery as jest.Mock)
+        .mockResolvedValueOnce({ metadata: [] })
+        .mockResolvedValueOnce({ metadata: [] })
+        .mockResolvedValueOnce({ metadata: [] });
+
+      const result = await getGraphSchemaHandler({ graphName: 'myGraph' });
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed.nodeLabels).toEqual([]);
+      expect(parsed.relationshipTypes).toEqual([]);
+      expect(parsed.connections).toEqual([]);
+    });
+
     it('should reject empty graph name', async () => {
       await expect(getGraphSchemaHandler({ graphName: '' }))
         .rejects.toThrow('Graph name is required and cannot be empty');
@@ -385,6 +409,19 @@ describe('MCP Schema Tools', () => {
 
       expect(parsed.sampledCount).toBe(0);
       expect(parsed.properties).toEqual([]);
+    });
+
+    it('should not throw when the driver returns results without a data field', async () => {
+      // falkordb GraphReply.data is optional (undefined for empty replies)
+      (falkorDBService.executeReadOnlyQuery as jest.Mock)
+        .mockResolvedValueOnce({ metadata: [] })
+        .mockResolvedValueOnce({ metadata: [] });
+
+      const result = await getNodeSchemaHandler({ graphName: 'myGraph', label: 'Person' });
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed.properties).toEqual([]);
+      expect(parsed.sampledCount).toBe(0);
     });
 
     it('should respect a custom sampleSize', async () => {
