@@ -22,6 +22,24 @@ const deleteGraphSchema = {
   confirmDelete: z.literal(true).describe("Must be set to true to confirm deletion. This is a safety measure to prevent accidental data loss."),
 };
 
+const getGraphSchemaSchema = {
+  graphName: z.string().describe("Name of the graph. Use the list_graphs tool to discover available graphs."),
+  includeConnections: z.boolean().optional().describe("If true (default), include the relationship connection topology. Each connection is { source, relationship, target } where source and target are arrays of node labels (a node may have multiple labels) and relationship is the relationship type. Derived from a bounded sample of relationships; set to false to skip it entirely on very large graphs to reduce cost and response size."),
+  connectionSampleSize: z.number().int().min(1).max(100000).optional().describe("Maximum number of relationships to scan when deriving connection topology (default: 10000). Bounds query cost on large graphs; topology derived from the sample may be incomplete if the graph has more relationships than this."),
+};
+
+const getNodeSchemaSchema = {
+  graphName: z.string().describe("Name of the graph. Use the list_graphs tool to discover available graphs."),
+  label: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).describe("Node label to inspect"),
+  sampleSize: z.number().int().min(1).max(10000).optional().describe("Number of nodes to sample (default: 100). Larger values improve property coverage at the cost of query time."),
+};
+
+const getRelationshipSchemaSchema = {
+  graphName: z.string().describe("Name of the graph. Use the list_graphs tool to discover available graphs."),
+  relationshipType: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).describe("Relationship type to inspect"),
+  sampleSize: z.number().int().min(1).max(10000).optional().describe("Number of relationships to sample (default: 100). Larger values improve property coverage at the cost of query time."),
+};
+
 function registerQueryGraphTool(server: McpServer): void {
   server.registerTool(
     "query_graph",
@@ -199,10 +217,168 @@ function registerDeleteGraphTool(server: McpServer): void {
 }
 
 
+function registerGetGraphSchemaTool(server: McpServer): void {
+  server.registerTool(
+    "get_graph_schema",
+    {
+      title: "Get Graph Schema",
+      description: "Get the schema of a graph including node labels, relationship types, and (optionally) the connection topology between them, to understand the graph structure before executing a query. Connection topology is derived from a bounded sample of relationships and can be disabled via includeConnections on very large graphs.",
+      inputSchema: getGraphSchemaSchema as any,
+    },
+    async (args: unknown) => {
+      const { graphName, includeConnections = true, connectionSampleSize = 10000 } = z.object(getGraphSchemaSchema).parse(args);
+      try {
+        if (!graphName?.trim()) {
+          throw new AppError(CommonErrors.INVALID_INPUT, 'Graph name is required and cannot be empty', true);
+        }
+
+        const labelsResult = await falkorDBService.executeReadOnlyQuery(graphName, "CALL db.labels()") as any;
+        const labels = (labelsResult.data ?? []).map((r: any) => r['label']);
+
+        const typesResult = await falkorDBService.executeReadOnlyQuery(graphName, "CALL db.relationshipTypes()") as any;
+        const relationshipTypes = (typesResult.data ?? []).map((r: any) => r['relationshipType']);
+
+        const schema: {
+          nodeLabels: string[];
+          relationshipTypes: string[];
+          connections: unknown[];
+          connectionSampleSize?: number;
+        } = {
+          nodeLabels: labels,
+          relationshipTypes,
+          connections: [],
+        };
+
+        if (includeConnections) {
+          const schemaResult = await falkorDBService.executeReadOnlyQuery(
+            graphName,
+            `MATCH (a)-[r]->(b) WITH a, r, b LIMIT ${connectionSampleSize} RETURN DISTINCT labels(a) AS source, type(r) AS relationship, labels(b) AS target`
+          ) as any;
+          schema.connections = schemaResult.data ?? [];
+          schema.connectionSampleSize = connectionSampleSize;
+        }
+
+        await logger.debug('Get graph schema tool executed successfully', { graphName, includeConnections });
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify(schema, null, 2)
+          }]
+        };
+      } catch (error) {
+        await logger.error('Get graph schema tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName });
+        throw error;
+      }
+    }
+  );
+}
+
+function registerGetNodeSchemaTool(server: McpServer): void {
+  server.registerTool(
+    "get_node_schema",
+    {
+      title: "Get Node Schema",
+      description: "Sample up to N nodes of a given label and aggregate their property keys by how many nodes carry each one (descending). Interpret each property's frequency relative to the returned sampledCount (the actual number of nodes sampled, which may be less than requestedSampleSize) to detect naming drift — e.g. a property present on only a few of many sampled nodes likely duplicates another under a slightly different name. Especially valuable in schemaless graphs where property naming can drift across subsets of nodes.",
+      inputSchema: getNodeSchemaSchema as any,
+    },
+    async (args: unknown) => {
+      const { graphName, label, sampleSize = 100 } = z.object(getNodeSchemaSchema).parse(args);
+      try {
+        if (!graphName?.trim()) {
+          throw new AppError(CommonErrors.INVALID_INPUT, 'Graph name is required and cannot be empty', true);
+        }
+
+        const result = await falkorDBService.executeReadOnlyQuery(
+          graphName,
+          `MATCH (n:${label}) WITH n LIMIT ${sampleSize} UNWIND keys(n) AS property RETURN property, count(*) AS frequency ORDER BY frequency DESC`
+        ) as any;
+
+        const countResult = await falkorDBService.executeReadOnlyQuery(
+          graphName,
+          `MATCH (n:${label}) WITH n LIMIT ${sampleSize} RETURN count(n) AS sampledCount`
+        ) as any;
+        const sampledCount = countResult.data?.[0]?.sampledCount ?? 0;
+
+        const response = {
+          label,
+          requestedSampleSize: sampleSize,
+          sampledCount,
+          properties: result.data ?? [],
+        };
+
+        await logger.debug('Get node schema tool executed successfully', { graphName, label, sampleSize, sampledCount });
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify(response, null, 2)
+          }]
+        };
+      } catch (error) {
+        await logger.error('Get node schema tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, label });
+        throw error;
+      }
+    }
+  );
+}
+
+function registerGetRelationshipSchemaTool(server: McpServer): void {
+  server.registerTool(
+    "get_relationship_schema",
+    {
+      title: "Get Relationship Schema",
+      description: "Sample up to N relationships of a given type and aggregate their property keys by how many relationships carry each one (descending). Interpret each property's frequency relative to the returned sampledCount (the actual number of relationships sampled, which may be less than requestedSampleSize) to detect naming drift — e.g. a property present on only a few of many sampled relationships likely duplicates another under a slightly different name. Especially valuable in schemaless graphs where property naming can drift across subsets of relationships.",
+      inputSchema: getRelationshipSchemaSchema as any,
+    },
+    async (args: unknown) => {
+      const { graphName, relationshipType, sampleSize = 100 } = z.object(getRelationshipSchemaSchema).parse(args);
+      try {
+        if (!graphName?.trim()) {
+          throw new AppError(CommonErrors.INVALID_INPUT, 'Graph name is required and cannot be empty', true);
+        }
+
+        const result = await falkorDBService.executeReadOnlyQuery(
+          graphName,
+          `MATCH ()-[r:${relationshipType}]->() WITH r LIMIT ${sampleSize} UNWIND keys(r) AS property RETURN property, count(*) AS frequency ORDER BY frequency DESC`
+        ) as any;
+
+        const countResult = await falkorDBService.executeReadOnlyQuery(
+          graphName,
+          `MATCH ()-[r:${relationshipType}]->() WITH r LIMIT ${sampleSize} RETURN count(r) AS sampledCount`
+        ) as any;
+        const sampledCount = countResult.data?.[0]?.sampledCount ?? 0;
+
+        const response = {
+          relationshipType,
+          requestedSampleSize: sampleSize,
+          sampledCount,
+          properties: result.data ?? [],
+        };
+
+        await logger.debug('Get relationship schema tool executed successfully', { graphName, relationshipType, sampleSize, sampledCount });
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify(response, null, 2)
+          }]
+        };
+      } catch (error) {
+        await logger.error('Get relationship schema tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, relationshipType });
+        throw error;
+      }
+    }
+  );
+}
+
 export default function registerAllTools(server: McpServer): void {
   // Register query_graph tools
   registerQueryGraphTool(server);
   registerQueryGraphReadOnlyTool(server);
   registerListGraphsTool(server);
   registerDeleteGraphTool(server);
+  registerGetGraphSchemaTool(server);
+  registerGetNodeSchemaTool(server);
+  registerGetRelationshipSchemaTool(server);
 }
