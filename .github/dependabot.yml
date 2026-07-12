@@ -8,6 +8,14 @@ updates:
       npm-minor-patch:
         update-types:
           - "patch"
+    ignore:
+      # TypeScript 7.0 (native Go compiler) ships no JS Compiler API and its
+      # peer range is rejected by @typescript-eslint / ts-node (ERESOLVE), so
+      # bumping typescript to 7.0.x breaks install/build. Scoped to 7.0.x only:
+      # TypeScript 7.1 is expected to restore the programmatic API, so allow
+      # Dependabot to propose 7.1+ when it lands.
+      - dependency-name: "typescript"
+        versions: ["7.0.x"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
