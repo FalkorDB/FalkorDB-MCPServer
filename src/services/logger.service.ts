@@ -16,9 +16,10 @@ type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 export class Logger {
   private logDir: string;
   private logFile: string;
-  private mcpServer?: McpServer;
+  private mcpServers: Set<McpServer>;
 
   constructor() {
+    this.mcpServers = new Set();
     // For MCP servers, we primarily use MCP notifications for logging
     // File logging is optional and only enabled if environment allows it
     this.logDir = userLogDir('falkordb-mcp', 'mulliken-llc', '0.1.0', false, true);
@@ -42,11 +43,27 @@ export class Logger {
   }
 
   /**
-   * Set the MCP server instance to enable client notifications
-   * This should be called after the server is created but before starting
+   * Add an MCP server instance to enable client notifications
+   * This should be called after each server is created but before starting
+   * Supports multiple servers for HTTP multi-session deployments
    */
   public setMcpServer(server: McpServer): void {
-    this.mcpServer = server;
+    this.mcpServers.add(server);
+  }
+
+  /**
+   * Remove an MCP server instance when a session closes
+   * This prevents memory leaks and ensures logs aren't sent to closed sessions
+   */
+  public removeMcpServer(server: McpServer): void {
+    this.mcpServers.delete(server);
+  }
+
+  /**
+   * Remove all registered MCP servers (for testing purposes)
+   */
+  public clearMcpServers(): void {
+    this.mcpServers.clear();
   }
 
   private formatLog(level: string, message: string, context?: LogContext): string {
@@ -78,30 +95,33 @@ export class Logger {
   }
 
   private async sendMcpLog(level: LogLevel, message: string, context?: LogContext): Promise<void> {
-    if (!this.mcpServer) {
+    if (this.mcpServers.size === 0) {
       return;
     }
 
-    try {
-      // Format log data for MCP client
-      const logData = context ? `${message} | ${JSON.stringify(context)}` : message;
+    // Format log data once for all servers
+    const logData = context ? `${message} | ${JSON.stringify(context)}` : message;
+    const mcpLevel = level === 'WARN' ? 'warning' : level.toLowerCase();
 
-      // Map WARN to warning for MCP spec compliance
-      const mcpLevel = level === 'WARN' ? 'warning' : level.toLowerCase();
+    // Send notification to all connected MCP clients
+    const notifications = Array.from(this.mcpServers).map(async (server) => {
+      try {
+        await server.server.notification({
+          method: 'notifications/message',
+          params: {
+            level: mcpLevel,
+            data: logData,
+            logger: 'falkordb-mcp'
+          }
+        });
+      } catch {
+        // If MCP notification fails for one server, continue with others
+        // Don't log this error to avoid infinite loops
+      }
+    });
 
-      // Send notification to MCP client
-      await this.mcpServer.server.notification({
-        method: 'notifications/message',
-        params: {
-          level: mcpLevel,
-          data: logData,
-          logger: 'falkordb-mcp'
-        }
-      });
-    } catch {
-      // If MCP notification fails, just continue - file logging is our fallback
-      // Don't log this error to avoid infinite loops
-    }
+    // Send to all servers in parallel
+    await Promise.allSettled(notifications);
   }
 
   private async log(level: LogLevel, message: string, context?: LogContext): Promise<void> {
