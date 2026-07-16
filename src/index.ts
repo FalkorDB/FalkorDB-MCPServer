@@ -17,6 +17,35 @@ import registerAllPrompts from './mcp/prompts.js';
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
 
+/**
+ * Monkey-patch console methods to redirect to stderr when using stdio transport
+ * This prevents console output from corrupting the MCP JSON-RPC protocol stream
+ * which uses stdout for communication
+ */
+function redirectConsoleToStderr(): void {
+  // Redirect all console methods to stderr
+  console.log = (...args: unknown[]) => {
+    process.stderr.write(`[LOG] ${args.map(String).join(' ')}\n`);
+  };
+
+  console.warn = (...args: unknown[]) => {
+    process.stderr.write(`[WARN] ${args.map(String).join(' ')}\n`);
+  };
+
+  console.info = (...args: unknown[]) => {
+    process.stderr.write(`[INFO] ${args.map(String).join(' ')}\n`);
+  };
+
+  console.debug = (...args: unknown[]) => {
+    process.stderr.write(`[DEBUG] ${args.map(String).join(' ')}\n`);
+  };
+
+  // console.error already writes to stderr by default, but let's be explicit for consistency
+  console.error = (...args: unknown[]) => {
+    process.stderr.write(`[ERROR] ${args.map(String).join(' ')}\n`);
+  };
+}
+
 // Setup global error handlers following Node.js best practices
 process.on('uncaughtException', (error: Error) => {
   logger.errorSync('Uncaught exception occurred', error);
@@ -119,6 +148,9 @@ async function startServer(): Promise<void> {
 }
 
 async function startStdioServer(): Promise<void> {
+  // Redirect console to stderr to prevent corruption of the MCP protocol stream
+  redirectConsoleToStderr();
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
   await logger.info('MCP server started successfully (stdio transport)');
