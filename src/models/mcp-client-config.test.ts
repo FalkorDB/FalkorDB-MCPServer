@@ -70,7 +70,7 @@ describe('MCP Client Configuration Models', () => {
         expect(sampleMCPClientConfig.defaultServer).toBe('falkordb');
         expect(sampleMCPClientConfig.servers).toBeDefined();
         expect(sampleMCPClientConfig.servers.falkordb).toBeDefined();
-        expect(sampleMCPClientConfig.servers.falkordb.url).toBe('http://localhost:3000/api/mcp');
+        expect(sampleMCPClientConfig.servers.falkordb.url).toBe('http://localhost:8080');
         expect(sampleMCPClientConfig.servers.falkordb.apiKey).toBe('your_api_key_here');
       });
 
@@ -108,7 +108,7 @@ describe('MCP Client Configuration Models', () => {
           'run',
           '-i',
           '--rm',
-          '-p', '3000:3000',
+          '-p', '8080:8080',
           '--env-file', '.env',
           'falkordb-mcpserver',
           'falkordb://host.docker.internal:6379'
@@ -136,7 +136,7 @@ describe('MCP Client Configuration Models', () => {
         expect(falkordbConfig.args).toContain('falkordb-mcpserver');
         expect(falkordbConfig.args).toContain('falkordb://host.docker.internal:6379');
         expect(falkordbConfig.args).toContain('-p');
-        expect(falkordbConfig.args).toContain('3000:3000');
+        expect(falkordbConfig.args).toContain('8080:8080');
         expect(falkordbConfig.args).toContain('--env-file');
         expect(falkordbConfig.args).toContain('.env');
       });
