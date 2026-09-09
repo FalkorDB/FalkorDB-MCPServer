@@ -1,3 +1,4 @@
+import { isIP } from 'node:net';
 import { FalkorDB } from 'falkordb';
 import { config } from '../config/index.js';
 import { AppError, CommonErrors } from '../errors/AppError.js';
@@ -52,7 +53,13 @@ class FalkorDBService {
           socket: {
             host: config.falkorDB.host,
             port: config.falkorDB.port,
-            ...(config.falkorDB.tls && { tls: true }),
+            // Node's tls.connect does not infer SNI from host, and SNI-dependent
+            // TLS terminators reject the handshake without it. Node also refuses
+            // an IP address as servername, so only set it for DNS names.
+            ...(config.falkorDB.tls && {
+              tls: true,
+              ...(isIP(config.falkorDB.host) === 0 && { servername: config.falkorDB.host }),
+            }),
           },
           ...(config.falkorDB.username && { username: config.falkorDB.username }),
           ...(config.falkorDB.password && { password: config.falkorDB.password }),

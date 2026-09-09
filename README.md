@@ -390,8 +390,8 @@ FALKORDB_PASSWORD=your-secure-password
 If your FalkorDB instance is only reachable over TLS (for example FalkorDB Cloud, or a
 self-hosted instance behind a TLS-terminating load balancer such as an AWS NLB or Fly.io),
 set `FALKORDB_TLS=true`. The server then opens a TLS connection with certificate and
-hostname verification, using `FALKORDB_HOST` as the SNI server name, so the host must be a
-DNS name that matches the certificate (not an IP address).
+hostname verification, sending `FALKORDB_HOST` as the SNI server name, so the host should be
+a DNS name that matches the certificate rather than an IP address.
 
 ```env
 FALKORDB_HOST=your-instance.falkordb.com
