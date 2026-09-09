@@ -126,6 +126,7 @@ See `docker-compose.yml` for the exact port and configuration values.
    FALKORDB_PORT=6379
    FALKORDB_USERNAME=    # Optional
    FALKORDB_PASSWORD=    # Optional
+   FALKORDB_TLS=false    # Set to 'true' when FalkorDB is behind TLS
    FALKORDB_DEFAULT_READONLY=false  # Set to 'true' for read-only mode (useful for replicas)
 
    # Logging Configuration (optional)
@@ -383,6 +384,24 @@ FALKORDB_PORT=6379
 FALKORDB_USERNAME=your-username
 FALKORDB_PASSWORD=your-secure-password
 ```
+
+### Connecting over TLS
+
+If your FalkorDB instance is only reachable over TLS (for example FalkorDB Cloud, or a
+self-hosted instance behind a TLS-terminating load balancer such as an AWS NLB or Fly.io),
+set `FALKORDB_TLS=true`. The server then opens a TLS connection with certificate and
+hostname verification, using `FALKORDB_HOST` as the SNI server name, so the host must be a
+DNS name that matches the certificate (not an IP address).
+
+```env
+FALKORDB_HOST=your-instance.falkordb.com
+FALKORDB_PORT=6379
+FALKORDB_TLS=true
+FALKORDB_USERNAME=your-username
+FALKORDB_PASSWORD=your-secure-password
+```
+
+Any value other than `true` (including unset) keeps the default plaintext connection.
 
 ### Read-Only Mode for Replica Instances
 

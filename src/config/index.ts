@@ -20,6 +20,7 @@ export const config = {
     port: parsePort(process.env.FALKORDB_PORT, 6379),
     username: process.env.FALKORDB_USERNAME || '',
     password: process.env.FALKORDB_PASSWORD || '',
+    tls: process.env.FALKORDB_TLS === 'true',
     defaultReadOnly: process.env.FALKORDB_DEFAULT_READONLY === 'true',
     strictReadOnly: process.env.FALKORDB_STRICT_READONLY === 'true',
   },

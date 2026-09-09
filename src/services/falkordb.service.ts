@@ -44,6 +44,7 @@ class FalkorDBService {
         logger.info('Attempting to connect to FalkorDB', {
           host: config.falkorDB.host,
           port: config.falkorDB.port,
+          tls: config.falkorDB.tls,
           attempt: this.retryCount + 1
         });
 
@@ -51,6 +52,7 @@ class FalkorDBService {
           socket: {
             host: config.falkorDB.host,
             port: config.falkorDB.port,
+            ...(config.falkorDB.tls && { tls: true }),
           },
           ...(config.falkorDB.username && { username: config.falkorDB.username }),
           ...(config.falkorDB.password && { password: config.falkorDB.password }),
