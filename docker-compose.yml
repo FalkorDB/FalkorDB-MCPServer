@@ -5,6 +5,7 @@ services:
     environment:
       - FALKORDB_USERNAME=${FALKORDB_USERNAME:-}
       - FALKORDB_PASSWORD=${FALKORDB_PASSWORD:-}
+      - FALKORDB_SAVE=${FALKORDB_SAVE:-60 1}
     # Build Redis auth args from the credentials, then hand off to the image's
     # real entrypoint. A blank FALKORDB_USERNAME still works: --requirepass sets
     # the password on Redis's built-in `default` user, so a username-less login
@@ -13,13 +14,14 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
+        REDIS_ARGS="--save $$FALKORDB_SAVE"
         if [ -n "$$FALKORDB_PASSWORD" ]; then
-          REDIS_ARGS="--requirepass $$FALKORDB_PASSWORD"
+          REDIS_ARGS="$$REDIS_ARGS --requirepass $$FALKORDB_PASSWORD"
           if [ -n "$$FALKORDB_USERNAME" ] && [ "$$FALKORDB_USERNAME" != "default" ]; then
             REDIS_ARGS="$$REDIS_ARGS --user $$FALKORDB_USERNAME on >$$FALKORDB_PASSWORD ~* &* +@all"
           fi
-          export REDIS_ARGS
         fi
+        export REDIS_ARGS
         exec /var/lib/falkordb/bin/run.sh
     ports:
       - "${FALKORDB_PORT:-6379}:6379"
@@ -28,7 +30,7 @@ services:
       # remotely (e.g. "0.0.0.0:${FALKORDB_WEB_PORT:-3000}:3000").
       - "127.0.0.1:${FALKORDB_WEB_PORT:-3000}:3000"
     volumes:
-      - falkordb-data:/data
+      - falkordb-data:/var/lib/falkordb/data
     networks:
       - falkordb-network
     healthcheck:
