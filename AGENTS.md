@@ -87,7 +87,7 @@ Schema-discovery tools (`get_graph_schema`, `get_node_schema`, `get_relationship
 
 ### Transports
 - **stdio** (default): Build output in `dist/` is executed directly by MCP clients.
-- **HTTP** (`MCP_TRANSPORT=http`, `src/index.ts`'s `startHTTPServer()`): Streamable HTTP via `StreamableHTTPServerTransport`, one `McpServer` instance per session. Requests are Bearer-authenticated against `MCP_API_KEY` when it's set — unset, auth is disabled. Before listening, `enforceLocalBindWithoutApiKey()` (`src/utils/startup-guard.ts`) refuses to start whenever `MCP_BIND_ADDRESS` declares a non-loopback address with no `MCP_API_KEY` set — this runs unconditionally in every HTTP deployment, not only under Docker Compose (see the `MCP_BIND_ADDRESS` row below for what the variable actually controls).
+- **HTTP** (`MCP_TRANSPORT=http`, `src/index.ts`'s `startHTTPServer()`): Streamable HTTP via `StreamableHTTPServerTransport`, one `McpServer` instance per session. Requests are Bearer-authenticated against `MCP_API_KEY` when it's set — unset, auth is disabled. Before listening, `enforceLocalBindWithoutApiKey()` (`src/utils/startup-guard.ts`) refuses to start if `MCP_BIND_ADDRESS` declares a non-loopback publish address with no `MCP_API_KEY` set — this guard runs in every deployment mode, though `MCP_BIND_ADDRESS` itself only controls the *published port's* bind address under Docker Compose; `httpServer.listen()` always binds every interface outside Compose (see the `MCP_BIND_ADDRESS` row below, and #192).
 
 ### Error Handling
 - MCP tool handlers use `errorHandler.toMcpErrorResult()` to sanitize errors before returning to clients (never throw from a tool handler)
@@ -107,7 +107,7 @@ Environment variables (copy `.env.example` to `.env`):
 | `FALKORDB_DEFAULT_READONLY` | `false` | Set to 'true' for read-only mode (useful for replicas) |
 | `MCP_TRANSPORT` | `stdio` | `stdio` or `http` — selects which transport `src/index.ts` starts |
 | `MCP_API_KEY` | — | Bearer token required on HTTP requests when set; HTTP auth is disabled when unset. Ignored in stdio mode |
-| `MCP_BIND_ADDRESS` | `127.0.0.1` | Docker Compose only: host interface the MCP server's published port binds to. Does not change what the server listens on inside the container (always every interface) and has no effect outside Compose. Non-loopback values require `MCP_API_KEY` to be set, or the server refuses to start in HTTP mode |
+| `MCP_BIND_ADDRESS` | `127.0.0.1` | Docker Compose: host-side bind address for the MCP server's published port. Every deployment mode evaluates it in the HTTP startup guard — non-loopback with `MCP_API_KEY` unset refuses to start. Does not change the process's own listen address outside Compose (`httpServer.listen()` always binds every interface there — see #192) |
 | `FALKORDB_WEB_BIND_ADDRESS` | `127.0.0.1` | Docker Compose only: interface the bundled FalkorDB web UI's published port binds to. The web UI has no auth of its own, so this is a manual, unguarded opt-in with no equivalent startup check |
 
 ## MCP Client Integration

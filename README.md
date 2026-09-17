@@ -100,7 +100,7 @@ The MCP server runs in **HTTP transport** mode and is exposed on `localhost:8080
 - **URL:** `http://localhost:8080`
 - **API Key:** Set via the `MCP_API_KEY` environment variable — optional for the default localhost-only setup, required if you set `MCP_BIND_ADDRESS` to a non-local address (see below)
 
-Both the MCP server's and the web UI's published ports are bound to `127.0.0.1` by default — reachable only from the machine running Docker Compose. To reach either from another machine (e.g. over a LAN), set `MCP_BIND_ADDRESS` / `FALKORDB_WEB_BIND_ADDRESS` to `0.0.0.0` in `.env`. The MCP server refuses to start with a non-local `MCP_BIND_ADDRESS` unless `MCP_API_KEY` is also set, since that combination would otherwise be an unauthenticated endpoint exposed to the network; the web UI has no auth of its own, so exposing it is a manual, unguarded opt-in.
+Both the MCP server's and the web UI's published ports are bound to `127.0.0.1` by default — reachable only from the machine running Docker Compose. To reach either from another machine (e.g. over a LAN), set `MCP_BIND_ADDRESS` / `FALKORDB_WEB_BIND_ADDRESS` to `0.0.0.0` in `.env`. The MCP server refuses to start with a non-local `MCP_BIND_ADDRESS` unless `MCP_API_KEY` is also set, since that combination would otherwise be an unauthenticated endpoint exposed to the network; the web UI has no auth of its own, so exposing it is a manual, unguarded opt-in. Neither service has any TLS support — reaching either over a LAN sends its credentials (the MCP `Authorization: Bearer <key>` header, or nothing at all for the web UI) in cleartext, so put a TLS-terminating reverse proxy in front for anything beyond a trusted LAN.
 
 See `docker-compose.yml` and `.env.example` for the exact port and configuration values.
 
@@ -291,6 +291,8 @@ MCP_API_KEY=your-secret-api-key  # Optional but recommended
 ```
 
 When using HTTP transport, clients connect by sending a POST request with an `initialize` message. The server returns an `Mcp-Session-Id` header that must be included in subsequent requests. API key authentication is enforced via the `Authorization: Bearer <key>` header when `MCP_API_KEY` is set.
+
+> **No TLS support:** the server speaks plain HTTP — it has no TLS configuration and consumes no certificates or keys. `Authorization: Bearer <key>` travels in cleartext. For encrypted remote access, terminate TLS in a reverse proxy or another layer in front of this server; don't expose it directly beyond a trusted network.
 
 **Testing HTTP transport:**
 

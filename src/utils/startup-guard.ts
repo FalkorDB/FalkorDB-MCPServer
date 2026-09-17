@@ -18,7 +18,7 @@ export function enforceLocalBindWithoutApiKey(): void {
     return;
   }
 
-  const message = `MCP_BIND_ADDRESS=${config.mcp.bindAddress} exposes the MCP server beyond localhost, but MCP_API_KEY is unset. Refusing to start an unauthenticated HTTP endpoint on the network. Set MCP_API_KEY in .env, or leave MCP_BIND_ADDRESS at 127.0.0.1.`;
+  const message = `MCP_BIND_ADDRESS=${config.mcp.bindAddress} exposes the MCP server beyond localhost, but MCP_API_KEY is unset. Refusing to start an unauthenticated HTTP endpoint on the network. Set MCP_API_KEY in .env, or set MCP_BIND_ADDRESS to a loopback address (e.g. 127.0.0.1 or ::1).`;
 
   // logger.errorSync() alone isn't enough here: by default (production,
   // ENABLE_FILE_LOGGING unset) it neither writes to a log file nor has an
