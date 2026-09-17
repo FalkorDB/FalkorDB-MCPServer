@@ -92,6 +92,8 @@ docker compose up -d
 
 > **Note:** Skipping the `.env` file leaves variables like `MCP_API_KEY` and `FALKORDB_PASSWORD` empty, which disables API key authentication and uses no database password.
 
+> **Tip:** Set `REDIS_ARGS` in `.env` to pass extra flags to the bundled FalkorDB's `redis-server`, for example `REDIS_ARGS=--appendonly yes` to enable AOF durability. The value is split on whitespace, and the auth flags derived from `FALKORDB_PASSWORD` are appended after it.
+
 This starts FalkorDB with health checks and persistent volumes, plus the MCP server pre-configured to connect to it.
 
 The MCP server runs in **HTTP transport** mode and is exposed on `localhost:8080` by default. To connect a client, configure it to use:
