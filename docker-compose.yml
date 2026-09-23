@@ -43,7 +43,23 @@ services:
       # is set and the MCP server's `depends_on: service_healthy` never unblocks.
       # Pass the password via REDISCLI_AUTH (only when set) so it is never split on
       # whitespace or reinterpreted by the shell; compare the captured reply to PONG.
-      test: ["CMD-SHELL", "[ -n \"$$FALKORDB_PASSWORD\" ] && export REDISCLI_AUTH=\"$$FALKORDB_PASSWORD\"; [ \"$$(redis-cli ping)\" = \"PONG\" ]"]
+      #
+      # Authenticate as FALKORDB_USERNAME when there is one, rather than always as
+      # `default`: REDIS_ARGS can disable the default user (`--user default off`),
+      # and `--requirepass` sets that user's password without re-enabling it. Probing
+      # as `default` would then fail against a perfectly healthy server and strand
+      # the MCP server behind `depends_on`. `set --` keeps the flag out of the
+      # command string, so a username is never re-split or reinterpreted.
+      test:
+        - CMD-SHELL
+        - |
+          if [ -n "$$FALKORDB_PASSWORD" ]; then
+            export REDISCLI_AUTH="$$FALKORDB_PASSWORD"
+            if [ -n "$$FALKORDB_USERNAME" ] && [ "$$FALKORDB_USERNAME" != "default" ]; then
+              set -- --user "$$FALKORDB_USERNAME"
+            fi
+          fi
+          [ "$$(redis-cli "$$@" ping)" = "PONG" ]
       interval: 10s
       timeout: 5s
       retries: 5
