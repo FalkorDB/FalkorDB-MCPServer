@@ -92,6 +92,10 @@ docker compose up -d
 
 > **Note:** Skipping the `.env` file leaves variables like `MCP_API_KEY` and `FALKORDB_PASSWORD` empty, which disables API key authentication and uses no database password.
 
+> **Tip:** Set `REDIS_ARGS` in `.env` to pass extra flags to the bundled FalkorDB's `redis-server`, for example `REDIS_ARGS=--appendonly yes`. The value is split on whitespace, and the auth flags derived from `FALKORDB_PASSWORD` are appended after it, so they win on conflict.
+>
+> Flags that write to disk do not yet survive a `docker compose down`: the image runs `redis-server --dir /var/lib/falkordb/data` — appended *after* `REDIS_ARGS`, so the directory cannot be overridden here — while the `falkordb-data` volume is mounted at `/data`. Until [#174](https://github.com/FalkorDB/FalkorDB-MCPServer/pull/174) moves the mount to the real data directory, RDB and AOF files are written to the container's writable layer.
+
 This starts FalkorDB with health checks and persistent volumes, plus the MCP server pre-configured to connect to it.
 
 The MCP server runs in **HTTP transport** mode and is exposed on `localhost:8080` by default. To connect a client, configure it to use:

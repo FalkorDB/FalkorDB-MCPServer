@@ -102,6 +102,7 @@ Environment variables (copy `.env.example` to `.env`):
 | `FALKORDB_PORT` | `6379` | FalkorDB port |
 | `FALKORDB_USERNAME` | — | Optional authentication |
 | `FALKORDB_PASSWORD` | — | Optional authentication |
+| `REDIS_ARGS` | — | Docker Compose only: extra `redis-server` flags for the bundled FalkorDB container, split on whitespace. The auth flags built from `FALKORDB_USERNAME`/`FALKORDB_PASSWORD` are appended after it, so they win on conflict. Not read by the MCP server itself |
 | `FALKORDB_DEFAULT_READONLY` | `false` | Set to 'true' for read-only mode (useful for replicas) |
 
 ## MCP Client Integration
