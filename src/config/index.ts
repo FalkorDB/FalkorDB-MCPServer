@@ -26,5 +26,6 @@ export const config = {
   mcp: {
     transport: (process.env.MCP_TRANSPORT || 'stdio') as 'stdio' | 'http',
     apiKey: process.env.MCP_API_KEY || '',
+    bindAddress: process.env.MCP_BIND_ADDRESS || '127.0.0.1',
   },
 };

@@ -23,6 +23,7 @@ describe('Config', () => {
     expect(config).toHaveProperty('mcp');
     expect(config.mcp).toHaveProperty('transport');
     expect(config.mcp).toHaveProperty('apiKey');
+    expect(config.mcp).toHaveProperty('bindAddress');
     expect(['stdio', 'http']).toContain(config.mcp.transport);
   });
 });

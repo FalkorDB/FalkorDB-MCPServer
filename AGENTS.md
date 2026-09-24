@@ -1,7 +1,7 @@
 # Project Guidelines
 
 ## Overview
-FalkorDB-MCPServer is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that enables AI models to interact with [FalkorDB](https://github.com/FalkorDB/FalkorDB) graph databases through natural language. It communicates via stdio transport and exposes graph operations as MCP tools.
+FalkorDB-MCPServer is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that enables AI models to interact with [FalkorDB](https://github.com/FalkorDB/FalkorDB) graph databases through natural language. It exposes graph operations as MCP tools over either of two transports, selected by `MCP_TRANSPORT`: **stdio** (the default) or **Streamable HTTP**.
 
 ## Build & Install
 ```bash
@@ -48,7 +48,7 @@ npm test             # ensure all tests pass
 ## Project Structure
 ```
 src/
-├── index.ts                    # MCP server entry point — tool/resource registration, stdio transport
+├── index.ts                    # MCP server entry point — tool/resource registration, transport startup
 ├── services/
 │   ├── falkordb.service.ts     # FalkorDB connection and graph operations (singleton)
 │   └── logger.service.ts       # Logging and MCP notifications
@@ -58,7 +58,9 @@ src/
 │   ├── mcp.types.ts            # MCP protocol interfaces
 │   └── mcp-client-config.ts    # Configuration models
 └── utils/
-    └── connection-parser.ts    # Utility functions
+    ├── connection-parser.ts    # Utility functions
+    ├── bind-address.ts         # Loopback classification for MCP_BIND_ADDRESS
+    └── startup-guard.ts        # Refuses unauthenticated non-loopback HTTP startup
 ```
 
 ## Architecture Patterns
@@ -83,9 +85,9 @@ Schema-discovery tools (`get_graph_schema`, `get_node_schema`, `get_relationship
 - Services are exported as singleton instances
 - **FalkorDB Service** (`src/services/falkordb.service.ts`): manages connections, retries, and pooling; exposes `executeQuery()`, `executeReadOnlyQuery()`, `listGraphs()`, `deleteGraph()`
 
-### stdio Transport
-- The server communicates via **stdio**, not HTTP — console methods are redirected to stderr to prevent MCP protocol corruption
-- Build output in `dist/` is executed directly by MCP clients
+### Transports
+- **stdio** (default): Build output in `dist/` is executed directly by MCP clients.
+- **HTTP** (`MCP_TRANSPORT=http`, `src/index.ts`'s `startHTTPServer()`): Streamable HTTP via `StreamableHTTPServerTransport`, one `McpServer` instance per session. Requests are Bearer-authenticated against `MCP_API_KEY` when it's set — unset, auth is disabled. Before listening, `enforceLocalBindWithoutApiKey()` (`src/utils/startup-guard.ts`) refuses to start if `MCP_BIND_ADDRESS` declares a non-loopback publish address with no `MCP_API_KEY` set — this guard runs in every deployment mode, though `MCP_BIND_ADDRESS` itself only controls the *published port's* bind address under Docker Compose; `httpServer.listen()` always binds every interface outside Compose (see the `MCP_BIND_ADDRESS` row below, and #192).
 
 ### Error Handling
 - MCP tool handlers use `errorHandler.toMcpErrorResult()` to sanitize errors before returning to clients (never throw from a tool handler)
@@ -104,6 +106,10 @@ Environment variables (copy `.env.example` to `.env`):
 | `FALKORDB_PASSWORD` | — | Optional authentication |
 | `REDIS_ARGS` | — | Docker Compose only: extra `redis-server` flags for the bundled FalkorDB container, split on whitespace. The auth flags built from `FALKORDB_USERNAME`/`FALKORDB_PASSWORD` are appended after it, so they win on conflict. Not read by the MCP server itself |
 | `FALKORDB_DEFAULT_READONLY` | `false` | Set to 'true' for read-only mode (useful for replicas) |
+| `MCP_TRANSPORT` | `stdio` | `stdio` or `http` — selects which transport `src/index.ts` starts |
+| `MCP_API_KEY` | — | Bearer token required on HTTP requests when set; HTTP auth is disabled when unset. Ignored in stdio mode |
+| `MCP_BIND_ADDRESS` | `127.0.0.1` | Docker Compose: host-side bind address for the MCP server's published port. Every deployment mode evaluates it in the HTTP startup guard — non-loopback with `MCP_API_KEY` unset refuses to start. Does not change the process's own listen address outside Compose (`httpServer.listen()` always binds every interface there — see #192) |
+| `FALKORDB_WEB_BIND_ADDRESS` | `127.0.0.1` | Docker Compose only: interface the bundled FalkorDB web UI's published port binds to. The web UI has no auth of its own, so this is a manual, unguarded opt-in with no equivalent startup check |
 
 ## MCP Client Integration
 

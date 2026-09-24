@@ -10,6 +10,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { errorHandler } from './errors/ErrorHandler.js';
 import { logger } from './services/logger.service.js';
 import { config } from './config/index.js';
+import { enforceLocalBindWithoutApiKey } from './utils/startup-guard.js';
 import registerAllTools from './mcp/tools.js';
 import registerAllResources from './mcp/resources.js';
 import registerAllPrompts from './mcp/prompts.js';
@@ -104,9 +105,11 @@ async function initializeServices(): Promise<void> {
 
 // Main server startup
 async function startServer(): Promise<void> {
+  enforceLocalBindWithoutApiKey();
+
   try {
     await initializeServices();
-    
+
     if (config.mcp.transport === 'http') {
       await startHTTPServer();
     } else {

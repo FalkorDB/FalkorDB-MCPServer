@@ -30,10 +30,9 @@ services:
         exec /var/lib/falkordb/bin/run.sh
     ports:
       - "${FALKORDB_PORT:-6379}:6379"
-      # Web UI bound to 127.0.0.1 by default: it has no auth of its own, so a
-      # wildcard bind would expose it to the network. Override to reach it
-      # remotely (e.g. "0.0.0.0:${FALKORDB_WEB_PORT:-3000}:3000").
-      - "127.0.0.1:${FALKORDB_WEB_PORT:-3000}:3000"
+      # Web UI has no auth of its own, so it's bound to 127.0.0.1 by default.
+      # Set FALKORDB_WEB_BIND_ADDRESS=0.0.0.0 in .env to reach it remotely.
+      - "${FALKORDB_WEB_BIND_ADDRESS:-127.0.0.1}:${FALKORDB_WEB_PORT:-3000}:3000"
     volumes:
       - falkordb-data:/data
     networks:
@@ -73,17 +72,19 @@ services:
     # the in-container MCP_PORT must both stay 8080 — otherwise the host port
     # forwards to a port nothing is listening on and every connection is reset.
     #
-    # Published to 127.0.0.1 by default: in HTTP mode the server only enforces
-    # Bearer auth when MCP_API_KEY is set, so a wildcard bind would expose an
-    # unauthenticated endpoint. To reach it from other hosts, set MCP_API_KEY
-    # and override the binding (e.g. "0.0.0.0:${MCP_PORT:-8080}:8080").
+    # Bound to 127.0.0.1 by default: in HTTP mode the server only enforces Bearer
+    # auth when MCP_API_KEY is set, so a wildcard bind would expose an
+    # unauthenticated endpoint. Set MCP_BIND_ADDRESS=0.0.0.0 in .env (and set
+    # MCP_API_KEY) to reach it from other hosts — the server itself refuses to
+    # start otherwise (see enforceLocalBindWithoutApiKey() in src/utils/startup-guard.ts).
     ports:
-      - "127.0.0.1:${MCP_PORT:-8080}:8080"
+      - "${MCP_BIND_ADDRESS:-127.0.0.1}:${MCP_PORT:-8080}:8080"
     environment:
       - NODE_ENV=production
       - MCP_TRANSPORT=${MCP_TRANSPORT:-http}
       - MCP_PORT=8080
       - MCP_API_KEY=${MCP_API_KEY:-}
+      - MCP_BIND_ADDRESS=${MCP_BIND_ADDRESS:-127.0.0.1}
       - FALKORDB_HOST=falkordb
       # Fixed at 6379: this is the in-network port the falkordb service listens
       # on. FALKORDB_PORT only remaps the *host* published port (see above), so
