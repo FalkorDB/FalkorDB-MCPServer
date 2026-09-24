@@ -32,7 +32,8 @@ export class Logger {
         }
       } catch (error) {
         // If we can't create logs directory, disable file logging
-        console.warn('Failed to create log directory:', error instanceof Error ? error.message : String(error));
+        // Use console.error (stderr) to avoid corrupting stdio transport
+        console.error('Failed to create log directory:', error instanceof Error ? error.message : String(error));
         this.logFile = '';
       }
     } else {
