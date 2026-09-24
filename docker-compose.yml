@@ -35,7 +35,10 @@ services:
       # remotely (e.g. "0.0.0.0:${FALKORDB_WEB_PORT:-3000}:3000").
       - "127.0.0.1:${FALKORDB_WEB_PORT:-3000}:3000"
     volumes:
-      - falkordb-data:/data
+      # redis-server is started with `--dir "$FALKORDB_DATA_PATH"` by the image's
+      # run.sh, which is /var/lib/falkordb/data. The image's declared `VOLUME
+      # /data` is never written to, so mounting there persisted nothing.
+      - falkordb-data:/var/lib/falkordb/data
     networks:
       - falkordb-network
     healthcheck:
