@@ -5,21 +5,28 @@ services:
     environment:
       - FALKORDB_USERNAME=${FALKORDB_USERNAME:-}
       - FALKORDB_PASSWORD=${FALKORDB_PASSWORD:-}
-    # Build Redis auth args from the credentials, then hand off to the image's
-    # real entrypoint. A blank FALKORDB_USERNAME still works: --requirepass sets
-    # the password on Redis's built-in `default` user, so a username-less login
-    # is always valid. When FALKORDB_USERNAME is set, an additional ACL user with
-    # the same password and full privileges is created.
+      # Extra redis-server flags, e.g. REDIS_ARGS=--appendonly yes in .env. The
+      # image's run.sh splits this on whitespace into redis-server's argv, so
+      # no single value may contain spaces and quotes are not stripped.
+      - REDIS_ARGS=${REDIS_ARGS:-}
+    # Append the Redis auth args to whatever REDIS_ARGS the user supplied, then
+    # hand off to the image's real entrypoint. Auth is appended last so it wins
+    # over any --requirepass the user passed. A blank FALKORDB_USERNAME still
+    # works: --requirepass sets the password on Redis's built-in `default`
+    # user, so a username-less login is always valid. When FALKORDB_USERNAME is
+    # set, an additional ACL user with the same password and full privileges is
+    # created. `$$` is Compose's escape for a literal `$`: every expansion
+    # below is evaluated by the container's shell, never by `docker compose`.
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
         if [ -n "$$FALKORDB_PASSWORD" ]; then
-          REDIS_ARGS="--requirepass $$FALKORDB_PASSWORD"
+          REDIS_ARGS="$${REDIS_ARGS:+$$REDIS_ARGS }--requirepass $$FALKORDB_PASSWORD"
           if [ -n "$$FALKORDB_USERNAME" ] && [ "$$FALKORDB_USERNAME" != "default" ]; then
             REDIS_ARGS="$$REDIS_ARGS --user $$FALKORDB_USERNAME on >$$FALKORDB_PASSWORD ~* &* +@all"
           fi
-          export REDIS_ARGS
         fi
+        export REDIS_ARGS
         exec /var/lib/falkordb/bin/run.sh
     ports:
       - "${FALKORDB_PORT:-6379}:6379"
@@ -36,7 +43,23 @@ services:
       # is set and the MCP server's `depends_on: service_healthy` never unblocks.
       # Pass the password via REDISCLI_AUTH (only when set) so it is never split on
       # whitespace or reinterpreted by the shell; compare the captured reply to PONG.
-      test: ["CMD-SHELL", "[ -n \"$$FALKORDB_PASSWORD\" ] && export REDISCLI_AUTH=\"$$FALKORDB_PASSWORD\"; [ \"$$(redis-cli ping)\" = \"PONG\" ]"]
+      #
+      # Authenticate as FALKORDB_USERNAME when there is one, rather than always as
+      # `default`: REDIS_ARGS can disable the default user (`--user default off`),
+      # and `--requirepass` sets that user's password without re-enabling it. Probing
+      # as `default` would then fail against a perfectly healthy server and strand
+      # the MCP server behind `depends_on`. `set --` keeps the flag out of the
+      # command string, so a username is never re-split or reinterpreted.
+      test:
+        - CMD-SHELL
+        - |
+          if [ -n "$$FALKORDB_PASSWORD" ]; then
+            export REDISCLI_AUTH="$$FALKORDB_PASSWORD"
+            if [ -n "$$FALKORDB_USERNAME" ] && [ "$$FALKORDB_USERNAME" != "default" ]; then
+              set -- --user "$$FALKORDB_USERNAME"
+            fi
+          fi
+          [ "$$(redis-cli "$$@" ping)" = "PONG" ]
       interval: 10s
       timeout: 5s
       retries: 5

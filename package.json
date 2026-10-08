@@ -80,7 +80,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",
-    "dotenv": "^17.2.1",
+    "dotenv": "^18.0.1",
     "falkordb": "^6.3.0",
     "platformdirs": "^4.3.8-rc3",
     "zod": "^4.3.6"
