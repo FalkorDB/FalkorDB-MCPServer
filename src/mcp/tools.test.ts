@@ -38,6 +38,14 @@ jest.mock('../config/index.js', () => ({
 import registerAllTools from './tools.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { falkorDBService } from '../services/falkordb.service.js';
+import { logger } from '../services/logger.service.js';
+
+// Tool handlers report failures as sanitized MCP error results rather than throwing.
+async function expectToolError(resultPromise: Promise<any>, message: string): Promise<void> {
+  const result = await resultPromise;
+  expect(result.isError).toBe(true);
+  expect(result.content[0].text).toContain(message);
+}
 
 describe('MCP Tools - Strict Read-Only Mode', () => {
   let server: McpServer;
@@ -131,21 +139,14 @@ describe('MCP Tools - Strict Read-Only Mode', () => {
     });
 
     it('should reject readOnly=false when strictReadOnly is enabled', async () => {
-      await expect(
+      await expectToolError(
         queryGraphHandler({
           graphName: 'test',
           query: 'CREATE (n:Test) RETURN n',
           readOnly: false,
-        })
-      ).rejects.toThrow(AppError);
-
-      await expect(
-        queryGraphHandler({
-          graphName: 'test',
-          query: 'CREATE (n:Test) RETURN n',
-          readOnly: false,
-        })
-      ).rejects.toThrow('strict read-only mode');
+        }),
+        'strict read-only mode'
+      );
 
       expect(falkorDBService.executeQuery).not.toHaveBeenCalled();
     });
@@ -186,37 +187,29 @@ describe('MCP Tools - Strict Read-Only Mode', () => {
     });
 
     it('should include proper error information when rejecting write queries', async () => {
-      try {
-        await queryGraphHandler({
-          graphName: 'test',
-          query: 'CREATE (n:Test) RETURN n',
-          readOnly: false,
-        });
-        fail('Expected error to be thrown');
-      } catch (error) {
-        expect(error).toBeInstanceOf(AppError);
-        expect((error as AppError).name).toBe(CommonErrors.INVALID_INPUT);
-        expect((error as AppError).message).toContain('FALKORDB_STRICT_READONLY=true');
-      }
+      const result = await queryGraphHandler({
+        graphName: 'test',
+        query: 'CREATE (n:Test) RETURN n',
+        readOnly: false,
+      });
+
+      expect(result).toEqual({
+        content: [{ type: 'text', text: expect.stringContaining('FALKORDB_STRICT_READONLY=true') }],
+        isError: true,
+      });
     });
 
     it('should reject write queries when strictReadOnly is enabled and defaultReadOnly=false and readOnly is not specified', async () => {
       // Override defaultReadOnly for this specific test case
       mockConfig.falkorDB.defaultReadOnly = false;
 
-      await expect(
+      await expectToolError(
         queryGraphHandler({
           graphName: 'test',
           query: 'CREATE (n:Test) RETURN n',
-        })
-      ).rejects.toThrow(AppError);
-
-      await expect(
-        queryGraphHandler({
-          graphName: 'test',
-          query: 'CREATE (n:Test) RETURN n',
-        })
-      ).rejects.toThrow('strict read-only mode');
+        }),
+        'strict read-only mode'
+      );
 
       expect(falkorDBService.executeQuery).not.toHaveBeenCalled();
     });
@@ -224,21 +217,23 @@ describe('MCP Tools - Strict Read-Only Mode', () => {
 
   describe('query_graph tool input validation', () => {
     it('should reject empty graph name', async () => {
-      await expect(
+      await expectToolError(
         queryGraphHandler({
           graphName: '',
           query: 'MATCH (n) RETURN n',
-        })
-      ).rejects.toThrow('Graph name is required and cannot be empty');
+        }),
+        'Graph name is required and cannot be empty'
+      );
     });
 
     it('should reject empty query', async () => {
-      await expect(
+      await expectToolError(
         queryGraphHandler({
           graphName: 'test',
           query: '',
-        })
-      ).rejects.toThrow('Query is required and cannot be empty');
+        }),
+        'Query is required and cannot be empty'
+      );
     });
   });
 });
@@ -351,8 +346,7 @@ describe('MCP Schema Tools', () => {
     });
 
     it('should reject empty graph name', async () => {
-      await expect(getGraphSchemaHandler({ graphName: '' }))
-        .rejects.toThrow('Graph name is required and cannot be empty');
+      await expectToolError(getGraphSchemaHandler({ graphName: '' }), 'Graph name is required and cannot be empty');
     });
   });
 
@@ -447,12 +441,24 @@ describe('MCP Schema Tools', () => {
     });
 
     it('should reject empty graph name', async () => {
-      await expect(getNodeSchemaHandler({ graphName: '', label: 'Person' }))
-        .rejects.toThrow('Graph name is required and cannot be empty');
+      await expectToolError(getNodeSchemaHandler({ graphName: '', label: 'Person' }), 'Graph name is required and cannot be empty');
     });
   });
 
   describe('get_relationship_schema', () => {
+    it('should not throw when the driver returns results without a data field', async () => {
+      // falkordb GraphReply.data is optional (undefined for empty replies)
+      (falkorDBService.executeReadOnlyQuery as jest.Mock)
+        .mockResolvedValueOnce({ metadata: [] })
+        .mockResolvedValueOnce({ metadata: [] });
+
+      const result = await getRelationshipSchemaHandler({ graphName: 'myGraph', relationshipType: 'KNOWS' });
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed.properties).toEqual([]);
+      expect(parsed.sampledCount).toBe(0);
+    });
+
     it('should aggregate properties ranked by frequency and report the actual sampled count', async () => {
       (falkorDBService.executeReadOnlyQuery as jest.Mock)
         .mockResolvedValueOnce({
@@ -504,8 +510,7 @@ describe('MCP Schema Tools', () => {
     });
 
     it('should reject empty graph name', async () => {
-      await expect(getRelationshipSchemaHandler({ graphName: '', relationshipType: 'ACTED_IN' }))
-        .rejects.toThrow('Graph name is required and cannot be empty');
+      await expectToolError(getRelationshipSchemaHandler({ graphName: '', relationshipType: 'ACTED_IN' }), 'Graph name is required and cannot be empty');
     });
   });
 });
@@ -693,18 +698,15 @@ describe('MCP Tools - query_graph_readonly', () => {
   });
 
   it('should reject empty graph name', async () => {
-    await expect(queryGraphReadonlyHandler({ graphName: '', query: 'MATCH (n) RETURN n' }))
-      .rejects.toThrow('Graph name is required and cannot be empty');
+    await expectToolError(queryGraphReadonlyHandler({ graphName: '', query: 'MATCH (n) RETURN n' }), 'Graph name is required and cannot be empty');
   });
 
   it('should reject empty query', async () => {
-    await expect(queryGraphReadonlyHandler({ graphName: 'myGraph', query: '' }))
-      .rejects.toThrow('Query is required and cannot be empty');
+    await expectToolError(queryGraphReadonlyHandler({ graphName: 'myGraph', query: '' }), 'Query is required and cannot be empty');
   });
 
   it('should reject whitespace-only graph name', async () => {
-    await expect(queryGraphReadonlyHandler({ graphName: '   ', query: 'MATCH (n) RETURN n' }))
-      .rejects.toThrow('Graph name is required and cannot be empty');
+    await expectToolError(queryGraphReadonlyHandler({ graphName: '   ', query: 'MATCH (n) RETURN n' }), 'Graph name is required and cannot be empty');
   });
 
   it('should propagate service errors', async () => {
@@ -712,8 +714,7 @@ describe('MCP Tools - query_graph_readonly', () => {
       new Error('Connection lost')
     );
 
-    await expect(queryGraphReadonlyHandler({ graphName: 'myGraph', query: 'MATCH (n) RETURN n' }))
-      .rejects.toThrow('Connection lost');
+    await expectToolError(queryGraphReadonlyHandler({ graphName: 'myGraph', query: 'MATCH (n) RETURN n' }), 'Connection lost');
   });
 });
 
@@ -754,7 +755,7 @@ describe('MCP Tools - list_graphs', () => {
   it('should propagate service errors', async () => {
     (falkorDBService.listGraphs as jest.Mock).mockRejectedValue(new Error('DB unavailable'));
 
-    await expect(listGraphsHandler({})).rejects.toThrow('DB unavailable');
+    await expectToolError(listGraphsHandler({}), 'DB unavailable');
   });
 });
 
@@ -785,22 +786,19 @@ describe('MCP Tools - delete_graph', () => {
   });
 
   it('should reject empty graph name', async () => {
-    await expect(deleteGraphHandler({ graphName: '', confirmDelete: true }))
-      .rejects.toThrow('Graph name is required and cannot be empty');
+    await expectToolError(deleteGraphHandler({ graphName: '', confirmDelete: true }), 'Graph name is required and cannot be empty');
 
     expect(falkorDBService.deleteGraph).not.toHaveBeenCalled();
   });
 
   it('should reject whitespace-only graph name', async () => {
-    await expect(deleteGraphHandler({ graphName: '   ', confirmDelete: true }))
-      .rejects.toThrow('Graph name is required and cannot be empty');
+    await expectToolError(deleteGraphHandler({ graphName: '   ', confirmDelete: true }), 'Graph name is required and cannot be empty');
   });
 
   it('should reject deletion in strict read-only mode', async () => {
     mockConfig.falkorDB.strictReadOnly = true;
 
-    await expect(deleteGraphHandler({ graphName: 'myGraph', confirmDelete: true }))
-      .rejects.toThrow('strict read-only mode');
+    await expectToolError(deleteGraphHandler({ graphName: 'myGraph', confirmDelete: true }), 'strict read-only mode');
 
     expect(falkorDBService.deleteGraph).not.toHaveBeenCalled();
   });
@@ -808,7 +806,98 @@ describe('MCP Tools - delete_graph', () => {
   it('should propagate service errors', async () => {
     (falkorDBService.deleteGraph as jest.Mock).mockRejectedValue(new Error('Graph not found'));
 
-    await expect(deleteGraphHandler({ graphName: 'missing', confirmDelete: true }))
-      .rejects.toThrow('Graph not found');
+    await expectToolError(deleteGraphHandler({ graphName: 'missing', confirmDelete: true }), 'Graph not found');
+  });
+});
+
+describe('MCP Tools - error sanitization', () => {
+  const handlers: Record<string, any> = {};
+  const leakyMessage =
+    'Failed to connect to FalkorDB after 5 attempts: connect ECONNREFUSED 10.0.4.17:6379 ' +
+    'via falkordb://admin:hunter2@db.internal:6379\n    at Socket.connect (/app/node_modules/falkordb/dist/index.js:1:1)';
+
+  // Each tool, the arguments that reach its service call, and the service method it calls
+  const cases: Array<[string, Record<string, unknown>, keyof typeof falkorDBService]> = [
+    ['query_graph', { graphName: 'g', query: 'MATCH (n) RETURN n' }, 'executeQuery'],
+    ['query_graph_readonly', { graphName: 'g', query: 'MATCH (n) RETURN n' }, 'executeReadOnlyQuery'],
+    ['list_graphs', {}, 'listGraphs'],
+    ['delete_graph', { graphName: 'g', confirmDelete: true }, 'deleteGraph'],
+    ['get_graph_schema', { graphName: 'g' }, 'executeReadOnlyQuery'],
+    ['get_node_schema', { graphName: 'g', label: 'Person' }, 'executeReadOnlyQuery'],
+    ['get_relationship_schema', { graphName: 'g', relationshipType: 'KNOWS' }, 'executeReadOnlyQuery'],
+  ];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockConfig = { falkorDB: { defaultReadOnly: false, strictReadOnly: false } };
+
+    const server = {
+      registerTool: jest.fn((name, _schema, handler) => {
+        handlers[name] = handler;
+      }),
+    } as any;
+
+    registerAllTools(server);
+  });
+
+  it('should cover every registered tool', () => {
+    expect(Object.keys(handlers).sort()).toEqual(cases.map(([tool]) => tool).sort());
+  });
+
+  it.each(cases)('%s should return a sanitized error result instead of throwing', async (tool, args, method) => {
+    const serviceError = new AppError(CommonErrors.CONNECTION_FAILED, leakyMessage, true);
+    (falkorDBService[method] as jest.Mock).mockRejectedValue(serviceError);
+
+    const result = await handlers[tool](args);
+
+    expect(result).toEqual({
+      content: [{
+        type: 'text',
+        text: 'Error: Failed to connect to FalkorDB after 5 attempts: connect ECONNREFUSED <host> ' +
+          'via falkordb://<credentials>@<host>',
+      }],
+      isError: true,
+    });
+  });
+
+  it.each(cases)('%s should still log the original error internally', async (tool, args, method) => {
+    const serviceError = new Error(leakyMessage);
+    (falkorDBService[method] as jest.Mock).mockRejectedValue(serviceError);
+
+    await handlers[tool](args);
+
+    expect(logger.error).toHaveBeenCalledTimes(1);
+    expect((logger.error as jest.Mock).mock.calls[0][1]).toBe(serviceError);
+  });
+
+  it.each(cases)('%s should wrap non-Error rejections for logging and return a generic message', async (tool, args, method) => {
+    (falkorDBService[method] as jest.Mock).mockRejectedValue('redis://admin:hunter2@10.0.4.17:6379');
+
+    const result = await handlers[tool](args);
+
+    expect(result).toEqual({
+      content: [{ type: 'text', text: 'Error: An unexpected error occurred' }],
+      isError: true,
+    });
+    expect((logger.error as jest.Mock).mock.calls[0][1]).toEqual(new Error('redis://admin:hunter2@10.0.4.17:6379'));
+  });
+
+  it.each(['query_graph', 'query_graph_readonly'])('%s should truncate long queries in the failure log', async (tool) => {
+    const method = tool === 'query_graph' ? 'executeQuery' : 'executeReadOnlyQuery';
+    (falkorDBService[method] as jest.Mock).mockRejectedValue(new Error('boom'));
+    const longQuery = `MATCH (n) WHERE n.name = '${'x'.repeat(200)}' RETURN n`;
+
+    await handlers[tool]({ graphName: 'g', query: longQuery });
+
+    expect((logger.error as jest.Mock).mock.calls[0][2]).toEqual({
+      graphName: 'g',
+      query: longQuery.substring(0, 100) + '...',
+    });
+  });
+
+  it('should still throw on invalid arguments so the SDK reports a validation error', async () => {
+    await expect(handlers['get_node_schema']({ graphName: 'g', label: 'Person) DETACH DELETE (n' }))
+      .rejects.toThrow();
+    expect(falkorDBService.executeReadOnlyQuery).not.toHaveBeenCalled();
   });
 });

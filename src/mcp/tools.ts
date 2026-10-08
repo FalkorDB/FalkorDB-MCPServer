@@ -4,6 +4,7 @@ import { falkorDBService } from '../services/falkordb.service.js';
 import { logger } from '../services/logger.service.js';
 import { AppError, CommonErrors } from '../errors/AppError.js';
 import { config } from '../config/index.js';
+import { errorHandler } from '../errors/ErrorHandler.js';
 
 // FalkorDB query parameter values: JSON-like primitives, arrays, and maps.
 // Parameter names — and nested map keys — must be valid identifiers because the
@@ -126,7 +127,7 @@ function registerQueryGraphTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Query tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, query: query.substring(0, 100) + (query.length > 100 ? '...' : '') });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   )
@@ -170,7 +171,7 @@ function registerQueryGraphReadOnlyTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Read-only query tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, query: query.substring(0, 100) + (query.length > 100 ? '...' : '') });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   )
@@ -198,7 +199,7 @@ function registerListGraphsTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('List graphs tool execution failed', error instanceof Error ? error : new Error(String(error)));
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   );
@@ -244,7 +245,7 @@ function registerDeleteGraphTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Delete graph tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   );
@@ -302,7 +303,7 @@ function registerGetGraphSchemaTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Get graph schema tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   );
@@ -351,7 +352,7 @@ function registerGetNodeSchemaTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Get node schema tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, label });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   );
@@ -400,7 +401,7 @@ function registerGetRelationshipSchemaTool(server: McpServer): void {
         };
       } catch (error) {
         await logger.error('Get relationship schema tool execution failed', error instanceof Error ? error : new Error(String(error)), { graphName, relationshipType });
-        throw error;
+        return errorHandler.toMcpErrorResult(error);
       }
     }
   );
