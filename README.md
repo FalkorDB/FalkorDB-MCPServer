@@ -407,6 +407,12 @@ FALKORDB_PASSWORD=your-secure-password
 
 Any value other than `true` (including unset) keeps the default plaintext connection.
 
+`FALKORDB_TLS` applies when you run the server against your own FalkorDB (`npm start`, an MCP
+client config, or `docker run` with `-e FALKORDB_HOST=... -e FALKORDB_TLS=true`). The bundled
+`docker-compose.yml` does not forward it: Compose always connects the MCP server to its own
+FalkorDB container over the internal network, which speaks plaintext, so TLS there would fail
+the handshake.
+
 ### Read-Only Mode for Replica Instances
 
 If you're connecting to a FalkorDB replica instance or want to ensure no write operations are performed, you can enable read-only mode by default:
