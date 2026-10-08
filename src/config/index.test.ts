@@ -26,4 +26,37 @@ describe('Config', () => {
     expect(config.mcp).toHaveProperty('bindAddress');
     expect(['stdio', 'http']).toContain(config.mcp.transport);
   });
+
+  describe('mcp.bindAddress', () => {
+    const originalBindAddress = process.env.MCP_BIND_ADDRESS;
+
+    afterEach(() => {
+      if (originalBindAddress === undefined) {
+        delete process.env.MCP_BIND_ADDRESS;
+      } else {
+        process.env.MCP_BIND_ADDRESS = originalBindAddress;
+      }
+      jest.resetModules();
+    });
+
+    async function loadConfig() {
+      jest.resetModules();
+      return (await import('./index.js')).config;
+    }
+
+    test('defaults to 127.0.0.1 when MCP_BIND_ADDRESS is unset', async () => {
+      delete process.env.MCP_BIND_ADDRESS;
+      expect((await loadConfig()).mcp.bindAddress).toBe('127.0.0.1');
+    });
+
+    test('defaults to 127.0.0.1 when MCP_BIND_ADDRESS is empty', async () => {
+      process.env.MCP_BIND_ADDRESS = '';
+      expect((await loadConfig()).mcp.bindAddress).toBe('127.0.0.1');
+    });
+
+    test('reads MCP_BIND_ADDRESS when set', async () => {
+      process.env.MCP_BIND_ADDRESS = '0.0.0.0';
+      expect((await loadConfig()).mcp.bindAddress).toBe('0.0.0.0');
+    });
+  });
 });

@@ -59,6 +59,49 @@ describe('Startup Guard', () => {
       expect(logger.errorSync).toHaveBeenCalledWith(expect.stringContaining('MCP_API_KEY'));
     });
 
+    it('reports the refusal on stderr and the logger before exiting', () => {
+      mockConfig.mcp = { transport: 'http', apiKey: '', bindAddress: '0.0.0.0' };
+
+      expect(() => enforceLocalBindWithoutApiKey()).toThrow('process.exit called');
+
+      const exitOrder = processExitSpy.mock.invocationCallOrder[0];
+      expect(consoleErrorSpy.mock.invocationCallOrder[0]).toBeLessThan(exitOrder);
+      expect((logger.errorSync as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(exitOrder);
+      expect(consoleErrorSpy.mock.calls[0][0]).toBe((logger.errorSync as jest.Mock).mock.calls[0][0]);
+    });
+
+    it('names the offending address and both remedies in the refusal message', () => {
+      mockConfig.mcp = { transport: 'http', apiKey: '', bindAddress: '192.168.1.10' };
+
+      expect(() => enforceLocalBindWithoutApiKey()).toThrow('process.exit called');
+
+      const message = consoleErrorSpy.mock.calls[0][0] as string;
+      expect(message).toContain('MCP_BIND_ADDRESS=192.168.1.10');
+      expect(message).toContain('MCP_API_KEY');
+      expect(message).toContain('127.0.0.1');
+    });
+
+    it('exits 1 for a non-local HTTP bind with a whitespace-only API key', () => {
+      mockConfig.mcp = { transport: 'http', apiKey: '   ', bindAddress: '0.0.0.0' };
+
+      expect(() => enforceLocalBindWithoutApiKey()).toThrow('process.exit called');
+
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it.each(['::1', '[::1]', '127.0.0.2', '::ffff:127.0.0.1'])(
+      'does not exit for loopback HTTP bind %s with no API key',
+      (bindAddress) => {
+        mockConfig.mcp = { transport: 'http', apiKey: '', bindAddress };
+
+        expect(() => enforceLocalBindWithoutApiKey()).not.toThrow();
+
+        expect(processExitSpy).not.toHaveBeenCalled();
+        expect(consoleErrorSpy).not.toHaveBeenCalled();
+        expect(logger.errorSync).not.toHaveBeenCalled();
+      }
+    );
+
     it('does not exit for a non-local HTTP bind with an API key set', () => {
       mockConfig.mcp = { transport: 'http', apiKey: 'secret', bindAddress: '0.0.0.0' };
 
@@ -66,6 +109,7 @@ describe('Startup Guard', () => {
 
       expect(processExitSpy).not.toHaveBeenCalled();
       expect(consoleErrorSpy).not.toHaveBeenCalled();
+      expect(logger.errorSync).not.toHaveBeenCalled();
     });
 
     it('does not exit for a local HTTP bind with no API key', () => {

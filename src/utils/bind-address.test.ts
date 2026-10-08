@@ -10,8 +10,12 @@ describe('Bind Address Utility', () => {
         '::1', // bare IPv6 loopback
         '[::1]', // bracketed IPv6 loopback
         '::ffff:127.0.0.1', // IPv4-mapped IPv6 loopback
+        '::FFFF:127.0.0.1', // IPv4-mapped prefix is case-insensitive
+        '[::ffff:127.0.0.1]', // bracketed IPv4-mapped IPv6 loopback
         '  127.0.0.1  ', // loopback with surrounding whitespace
+        '  [::1]  ', // bracketed IPv6 loopback with surrounding whitespace
         '', // empty string (unset)
+        '   ', // whitespace only (unset)
         undefined, // undefined (unset)
       ];
 
@@ -35,6 +39,15 @@ describe('Bind Address Utility', () => {
         '127.00.0.1', // leading zero (historically parsed as octal)
         '::ffff:999.0.0.1', // IPv4-mapped form with an invalid embedded octet
         '127.0.0.1.5', // too many octets
+        '[::]', // bracketed wildcard IPv6
+        '[0.0.0.0]', // bracketed wildcard IPv4
+        '[::1', // unbalanced bracket
+        '::1]', // unbalanced bracket
+        '::ffff:0.0.0.0', // IPv4-mapped wildcard
+        '::ffff:192.168.1.10', // IPv4-mapped LAN address
+        '::ffff:7f00:1', // hex IPv4-mapped loopback: not recognized, fails closed
+        '0:0:0:0:0:0:0:1', // expanded IPv6 loopback: not normalized, fails closed
+        '127.0.0.1:8080', // address with a port appended
       ];
 
       it.each(nonLocalValues)('treats %s as non-local', (value) => {
@@ -67,6 +80,33 @@ describe('Bind Address Utility', () => {
         isUnauthenticatedNetworkExposure({ transport: 'stdio', bindAddress: '0.0.0.0', apiKey: '' })
       ).toBe(false);
     });
+
+    it('is true for a non-local HTTP bind with a whitespace-only API key', () => {
+      expect(
+        isUnauthenticatedNetworkExposure({ transport: 'http', bindAddress: '0.0.0.0', apiKey: '   ' })
+      ).toBe(true);
+    });
+
+    it('is true for a non-local HTTP bind when the API key is undefined', () => {
+      expect(
+        isUnauthenticatedNetworkExposure({ transport: 'http', bindAddress: '0.0.0.0', apiKey: undefined })
+      ).toBe(true);
+    });
+
+    it('is true for a LAN HTTP bind with no API key', () => {
+      expect(
+        isUnauthenticatedNetworkExposure({ transport: 'http', bindAddress: '192.168.1.10', apiKey: '' })
+      ).toBe(true);
+    });
+
+    it.each(['::1', '[::1]', '127.0.0.2'])(
+      'is false for loopback HTTP bind %s with no API key',
+      (bindAddress) => {
+        expect(
+          isUnauthenticatedNetworkExposure({ transport: 'http', bindAddress, apiKey: '' })
+        ).toBe(false);
+      }
+    );
 
     it('is false when bindAddress is unset (defaults to local)', () => {
       expect(
