@@ -1,3 +1,5 @@
+import { AppError, CommonErrors } from '../errors/AppError.js';
+
 // Mock the logger service
 jest.mock('../services/logger.service.js', () => ({
   logger: {
@@ -36,6 +38,7 @@ jest.mock('../config/index.js', () => ({
 import registerAllTools from './tools.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { falkorDBService } from '../services/falkordb.service.js';
+import { logger } from '../services/logger.service.js';
 
 // Tool handlers report failures as sanitized MCP error results rather than throwing.
 async function expectToolError(resultPromise: Promise<any>, message: string): Promise<void> {
@@ -443,6 +446,19 @@ describe('MCP Schema Tools', () => {
   });
 
   describe('get_relationship_schema', () => {
+    it('should not throw when the driver returns results without a data field', async () => {
+      // falkordb GraphReply.data is optional (undefined for empty replies)
+      (falkorDBService.executeReadOnlyQuery as jest.Mock)
+        .mockResolvedValueOnce({ metadata: [] })
+        .mockResolvedValueOnce({ metadata: [] });
+
+      const result = await getRelationshipSchemaHandler({ graphName: 'myGraph', relationshipType: 'KNOWS' });
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed.properties).toEqual([]);
+      expect(parsed.sampledCount).toBe(0);
+    });
+
     it('should aggregate properties ranked by frequency and report the actual sampled count', async () => {
       (falkorDBService.executeReadOnlyQuery as jest.Mock)
         .mockResolvedValueOnce({
@@ -794,3 +810,94 @@ describe('MCP Tools - delete_graph', () => {
   });
 });
 
+describe('MCP Tools - error sanitization', () => {
+  const handlers: Record<string, any> = {};
+  const leakyMessage =
+    'Failed to connect to FalkorDB after 5 attempts: connect ECONNREFUSED 10.0.4.17:6379 ' +
+    'via falkordb://admin:hunter2@db.internal:6379\n    at Socket.connect (/app/node_modules/falkordb/dist/index.js:1:1)';
+
+  // Each tool, the arguments that reach its service call, and the service method it calls
+  const cases: Array<[string, Record<string, unknown>, keyof typeof falkorDBService]> = [
+    ['query_graph', { graphName: 'g', query: 'MATCH (n) RETURN n' }, 'executeQuery'],
+    ['query_graph_readonly', { graphName: 'g', query: 'MATCH (n) RETURN n' }, 'executeReadOnlyQuery'],
+    ['list_graphs', {}, 'listGraphs'],
+    ['delete_graph', { graphName: 'g', confirmDelete: true }, 'deleteGraph'],
+    ['get_graph_schema', { graphName: 'g' }, 'executeReadOnlyQuery'],
+    ['get_node_schema', { graphName: 'g', label: 'Person' }, 'executeReadOnlyQuery'],
+    ['get_relationship_schema', { graphName: 'g', relationshipType: 'KNOWS' }, 'executeReadOnlyQuery'],
+  ];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockConfig = { falkorDB: { defaultReadOnly: false, strictReadOnly: false } };
+
+    const server = {
+      registerTool: jest.fn((name, _schema, handler) => {
+        handlers[name] = handler;
+      }),
+    } as any;
+
+    registerAllTools(server);
+  });
+
+  it('should cover every registered tool', () => {
+    expect(Object.keys(handlers).sort()).toEqual(cases.map(([tool]) => tool).sort());
+  });
+
+  it.each(cases)('%s should return a sanitized error result instead of throwing', async (tool, args, method) => {
+    const serviceError = new AppError(CommonErrors.CONNECTION_FAILED, leakyMessage, true);
+    (falkorDBService[method] as jest.Mock).mockRejectedValue(serviceError);
+
+    const result = await handlers[tool](args);
+
+    expect(result).toEqual({
+      content: [{
+        type: 'text',
+        text: 'Error: Failed to connect to FalkorDB after 5 attempts: connect ECONNREFUSED <host> ' +
+          'via falkordb://<credentials>@<host>',
+      }],
+      isError: true,
+    });
+  });
+
+  it.each(cases)('%s should still log the original error internally', async (tool, args, method) => {
+    const serviceError = new Error(leakyMessage);
+    (falkorDBService[method] as jest.Mock).mockRejectedValue(serviceError);
+
+    await handlers[tool](args);
+
+    expect(logger.error).toHaveBeenCalledTimes(1);
+    expect((logger.error as jest.Mock).mock.calls[0][1]).toBe(serviceError);
+  });
+
+  it.each(cases)('%s should wrap non-Error rejections for logging and return a generic message', async (tool, args, method) => {
+    (falkorDBService[method] as jest.Mock).mockRejectedValue('redis://admin:hunter2@10.0.4.17:6379');
+
+    const result = await handlers[tool](args);
+
+    expect(result).toEqual({
+      content: [{ type: 'text', text: 'Error: An unexpected error occurred' }],
+      isError: true,
+    });
+    expect((logger.error as jest.Mock).mock.calls[0][1]).toEqual(new Error('redis://admin:hunter2@10.0.4.17:6379'));
+  });
+
+  it.each(['query_graph', 'query_graph_readonly'])('%s should truncate long queries in the failure log', async (tool) => {
+    const method = tool === 'query_graph' ? 'executeQuery' : 'executeReadOnlyQuery';
+    (falkorDBService[method] as jest.Mock).mockRejectedValue(new Error('boom'));
+    const longQuery = `MATCH (n) WHERE n.name = '${'x'.repeat(200)}' RETURN n`;
+
+    await handlers[tool]({ graphName: 'g', query: longQuery });
+
+    expect((logger.error as jest.Mock).mock.calls[0][2]).toEqual({
+      graphName: 'g',
+      query: longQuery.substring(0, 100) + '...',
+    });
+  });
+
+  it('should still throw on invalid arguments so the SDK reports a validation error', async () => {
+    await expect(handlers['get_node_schema']({ graphName: 'g', label: 'Person) DETACH DELETE (n' }))
+      .rejects.toThrow();
+    expect(falkorDBService.executeReadOnlyQuery).not.toHaveBeenCalled();
+  });
+});

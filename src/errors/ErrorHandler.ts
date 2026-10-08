@@ -65,18 +65,11 @@ export class ErrorHandler {
    * @returns A sanitized MCP error result
    */
   public toMcpErrorResult(error: unknown): McpErrorResult {
-    let errorMessage: string;
-
-    if (error instanceof AppError) {
-      // Use the AppError message which should already be user-safe
-      errorMessage = error.message;
-    } else if (error instanceof Error) {
-      // Sanitize generic error messages
-      errorMessage = this.sanitizeErrorMessage(error.message);
-    } else {
-      // Handle non-Error objects
-      errorMessage = 'An unexpected error occurred';
-    }
+    // AppError messages are sanitized too: the service layer embeds raw driver
+    // messages in them (e.g. "Failed to connect to FalkorDB after 5 attempts: ...")
+    const errorMessage = error instanceof Error
+      ? this.sanitizeErrorMessage(error.message)
+      : 'An unexpected error occurred';
 
     return {
       content: [{
@@ -102,30 +95,39 @@ export class ErrorHandler {
     const sanitizedLines = lines.filter(line => !line.trim().startsWith('at '));
     let sanitized = sanitizedLines.join('\n').trim();
 
-    // Remove connection strings with credentials (must be done before path removal)
-    sanitized = sanitized.replace(/redis:\/\/[^@\s]+@[^\s]+/gi, 'redis://<credentials>@<host>');
-    sanitized = sanitized.replace(/mongodb:\/\/[^@\s]+@[^\s]+/gi, 'mongodb://<credentials>@<host>');
-    sanitized = sanitized.replace(/postgresql:\/\/[^@\s]+@[^\s]+/gi, 'postgresql://<credentials>@<host>');
-    sanitized = sanitized.replace(/falkordb:\/\/[^@\s]+@[^\s]+/gi, 'falkordb://<credentials>@<host>');
+    // Remove credentials from URLs of any scheme (must be done before host and path removal)
+    sanitized = sanitized.replace(/\b([a-z][a-z0-9+.-]*):\/\/[^@\s]+@\S+/gi, '$1://<credentials>@<host>');
 
-    // Remove connection strings without credentials (prevents leaking internal network topology)
-    sanitized = sanitized.replace(/redis:\/\/(?![^@\s]+@)[^\s]+/gi, 'redis://<host>');
-    sanitized = sanitized.replace(/mongodb:\/\/(?![^@\s]+@)[^\s]+/gi, 'mongodb://<host>');
-    sanitized = sanitized.replace(/postgresql:\/\/(?![^@\s]+@)[^\s]+/gi, 'postgresql://<host>');
-    sanitized = sanitized.replace(/falkordb:\/\/(?![^@\s]+@)[^\s]+/gi, 'falkordb://<host>');
+    // Remove database connection strings without credentials (prevents leaking internal network topology)
+    sanitized = sanitized.replace(
+      /\b(rediss?|falkordbs?|mongodb(?:\+srv)?|postgres(?:ql)?):\/\/(?![^@\s]+@)\S+/gi,
+      '$1://<host>'
+    );
 
-    // Remove potential password/token patterns (more specific to capture full values)
-    sanitized = sanitized.replace(/password[=:]\s*(\S+)/gi, 'password=<redacted>');
-    sanitized = sanitized.replace(/\btoken[=:]\s*(\S+)/gi, 'token=<redacted>');
-    sanitized = sanitized.replace(/api[_-]?key[=:]\s*(\S+)/gi, 'apikey=<redacted>');
+    // Remove file URLs
+    sanitized = sanitized.replace(/\bfile:\/\/\S+/gi, '<path>');
+
+    // Remove potential password/token patterns, including quoted JSON-style values
+    sanitized = sanitized.replace(/["']?password["']?\s*[=:]\s*("[^"]*"|'[^']*'|[^\s,;}]+)/gi, 'password=<redacted>');
+    sanitized = sanitized.replace(/["']?\btoken["']?\s*[=:]\s*("[^"]*"|'[^']*'|[^\s,;}]+)/gi, 'token=<redacted>');
+    sanitized = sanitized.replace(/["']?api[_-]?key["']?\s*[=:]\s*("[^"]*"|'[^']*'|[^\s,;}]+)/gi, 'apikey=<redacted>');
+
+    // Remove the address from Node.js network errors (covers hostnames and IPv6, e.g. "ECONNREFUSED ::1:6379")
+    sanitized = sanitized.replace(
+      /\b(ECONNREFUSED|ECONNRESET|ETIMEDOUT|EHOSTUNREACH|ENETUNREACH|ENOTFOUND|EAI_AGAIN)\s+[^\s,;]+/g,
+      '$1 <host>'
+    );
 
     // Remove IP addresses and ports
     sanitized = sanitized.replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+\b/g, '<host>:<port>');
+    sanitized = sanitized.replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, '<host>');
     sanitized = sanitized.replace(/\blocalhost:\d+\b/g, 'localhost:<port>');
 
-    // Remove file paths (absolute paths) - use negative lookbehind to avoid matching :// URLs
-    sanitized = sanitized.replace(/(?<!:)\/[\w./-]+/g, '<path>');
-    sanitized = sanitized.replace(/\b[A-Z]:\\[\w\-\\]+/g, '<path>');
+    // Remove absolute file paths. A path must start a token and have at least two
+    // segments, so "Integer/Float" or "and/or" in database messages is left alone
+    // and the "//" of a URL never matches.
+    sanitized = sanitized.replace(/(?<=^|[\s'"`(\[=:,])~?(?:\/[\w.-]+){2,}\/?/g, '<path>');
+    sanitized = sanitized.replace(/\b[A-Z]:\\[\w.\\-]+/gi, '<path>');
 
     return sanitized || 'An error occurred';
   }

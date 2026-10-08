@@ -479,5 +479,129 @@ describe('ErrorHandler', () => {
       expect(text).not.toContain('myPass');
       expect(text).not.toContain('sk-123');
     });
+
+    it('should sanitize raw driver details that the service layer wraps in an AppError', () => {
+      const appError = new AppError(
+        CommonErrors.CONNECTION_FAILED,
+        'Failed to connect to FalkorDB after 5 attempts: connect ECONNREFUSED 10.0.4.17:6379',
+        true
+      );
+
+      const text = handler.toMcpErrorResult(appError).content[0].text;
+
+      expect(text).toBe('Error: Failed to connect to FalkorDB after 5 attempts: connect ECONNREFUSED <host>');
+    });
+
+    it('should sanitize credentials inside an AppError message', () => {
+      const appError = new AppError(
+        CommonErrors.OPERATION_FAILED,
+        "Failed to execute query on graph 'g': AUTH failed for falkordb://admin:hunter2@db.internal:6379",
+        true
+      );
+
+      const text = handler.toMcpErrorResult(appError).content[0].text;
+
+      expect(text).toBe("Error: Failed to execute query on graph 'g': AUTH failed for falkordb://<credentials>@<host>");
+    });
+
+    it.each([
+      ['rediss://admin:secret@cache.internal:6380', 'rediss://<credentials>@<host>'],
+      ['falkordbs://admin:secret@db.internal:6379', 'falkordbs://<credentials>@<host>'],
+      ['postgres://admin:secret@pg.internal:5432/app', 'postgres://<credentials>@<host>'],
+      ['mongodb+srv://admin:secret@cluster0.internal/app', 'mongodb+srv://<credentials>@<host>'],
+      ['https://admin:secret@api.internal/v1', 'https://<credentials>@<host>'],
+    ])('should sanitize credentials in %s', (url, expected) => {
+      const text = handler.toMcpErrorResult(new Error(`Connection failed to ${url}`)).content[0].text;
+
+      expect(text).toBe(`Error: Connection failed to ${expected}`);
+      expect(text).not.toContain('secret');
+    });
+
+    it.each([
+      ['rediss://cache.internal:6380', 'rediss://<host>'],
+      ['falkordbs://db.internal:6379', 'falkordbs://<host>'],
+      ['postgresql://pg.internal:5432/app', 'postgresql://<host>'],
+      ['mongodb://mongo.internal:27017', 'mongodb://<host>'],
+    ])('should hide the host of %s', (url, expected) => {
+      const text = handler.toMcpErrorResult(new Error(`Could not reach ${url}`)).content[0].text;
+
+      expect(text).toBe(`Error: Could not reach ${expected}`);
+    });
+
+    it.each([
+      ['connect ECONNREFUSED ::1:6379', 'connect ECONNREFUSED <host>'],
+      ['getaddrinfo ENOTFOUND falkordb.prod.internal', 'getaddrinfo ENOTFOUND <host>'],
+      ['getaddrinfo EAI_AGAIN falkordb.prod.internal', 'getaddrinfo EAI_AGAIN <host>'],
+      ['connect ETIMEDOUT 10.0.4.17:6379', 'connect ETIMEDOUT <host>'],
+      ['read ECONNRESET 10.0.4.17:6379, retrying', 'read ECONNRESET <host>, retrying'],
+    ])('should hide the address in the network error "%s"', (message, expected) => {
+      expect(handler.toMcpErrorResult(new Error(message)).content[0].text).toBe(`Error: ${expected}`);
+    });
+
+    it('should sanitize IP addresses without a port', () => {
+      const text = handler.toMcpErrorResult(new Error('Host 10.0.4.17 is unreachable')).content[0].text;
+
+      expect(text).toBe('Error: Host <host> is unreachable');
+    });
+
+    it.each([
+      ['{"password":"hunter2"}', '{password=<redacted>}'],
+      ["password: 'hunter 2'", 'password=<redacted>'],
+      ['password = hunter2, user=bob', 'password=<redacted>, user=bob'],
+      ['{"token": "abc.def"}', '{token=<redacted>}'],
+      ['apiKey: sk-live-123', 'apikey=<redacted>'],
+    ])('should redact the secret value in %s', (message, expected) => {
+      const text = handler.toMcpErrorResult(new Error(message)).content[0].text;
+
+      expect(text).toBe(`Error: ${expected}`);
+    });
+
+    it('should not redact words that merely contain "token"', () => {
+      const text = handler.toMcpErrorResult(new Error('Invalid input: unexpected tokenizer=state')).content[0].text;
+
+      expect(text).toBe('Error: Invalid input: unexpected tokenizer=state');
+    });
+
+    it.each([
+      ['Failed to load file:///etc/falkordb/tls/ca.pem', 'Failed to load <path>'],
+      ['Cannot open ~/.config/falkordb/creds.json', 'Cannot open <path>'],
+      ['Cannot open (/var/lib/falkordb/dump.rdb)', 'Cannot open (<path>)'],
+      ['config=/etc/falkordb/falkordb.conf', 'config=<path>'],
+      ['Cannot open C:\\Users\\admin\\falkordb\\creds.json', 'Cannot open <path>'],
+    ])('should sanitize the path in "%s"', (message, expected) => {
+      expect(handler.toMcpErrorResult(new Error(message)).content[0].text).toBe(`Error: ${expected}`);
+    });
+
+    it.each([
+      'Type mismatch: expected Integer/Float but was String',
+      'Use AND/OR to combine predicates',
+      'Division by zero: 10 / 0',
+      'See https://docs.falkordb.com/cypher/functions.html for details',
+      "Invalid input 'X': expected MATCH, CREATE or RETURN line: 1, column: 1, offset: 0",
+      "Failed to execute query on graph 'social/2024': Unknown function 'foo'",
+    ])('should leave the harmless message "%s" unchanged', (message) => {
+      expect(handler.toMcpErrorResult(new Error(message)).content[0].text).toBe(`Error: ${message}`);
+    });
+
+    it('should fall back to a generic message when only a stack trace remains', () => {
+      const error = new Error('\n    at Object.<anonymous> (/app/src/index.ts:1:1)');
+
+      expect(handler.toMcpErrorResult(error).content[0].text).toBe('Error: An error occurred');
+    });
+
+    it('should treat thrown strings as unexpected errors without echoing them', () => {
+      const result = handler.toMcpErrorResult('redis://admin:secret@10.0.4.17:6379');
+
+      expect(result.content[0].text).toBe('Error: An unexpected error occurred');
+    });
+
+    it('should be idempotent', () => {
+      const once = handler.toMcpErrorResult(
+        new Error('Connect to redis://admin:secret@10.0.4.17:6379 from /app/src/db.ts failed: ECONNREFUSED 10.0.4.17:6379')
+      ).content[0].text.replace(/^Error: /, '');
+      const twice = handler.toMcpErrorResult(new Error(once)).content[0].text.replace(/^Error: /, '');
+
+      expect(twice).toBe(once);
+    });
   });
 });
