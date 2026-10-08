@@ -186,6 +186,106 @@ describe('FalkorDB Service', () => {
       setTimeoutSpy.mockRestore();
     });
 
+    it('should report each failed attempt and the final failure on stderr', async () => {
+      // Arrange
+      mockFalkorDB.FalkorDB.connect.mockRejectedValue(new Error('Connection refused'));
+
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockImplementation((callback: any) => {
+        setImmediate(callback);
+        return {} as any;
+      });
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      try {
+        // Act
+        await expect(falkorDBService.initialize()).rejects.toThrow(
+          'Failed to connect to FalkorDB after 6 attempts: Connection refused'
+        );
+
+        // Assert: one line per retried attempt (1..5 of 6), then the final error
+        const lines = consoleErrorSpy.mock.calls.map(call => call[0] as string);
+        expect(lines).toHaveLength(6);
+        for (let attempt = 1; attempt <= 5; attempt++) {
+          expect(lines[attempt - 1]).toMatch(
+            new RegExp(`^\\[FalkorDB\\] Connection attempt ${attempt}/6 failed, retrying in \\d+s\\.\\.\\.$`)
+          );
+        }
+        expect(lines[5]).toBe(
+          '[FalkorDB] Failed to connect to FalkorDB after 6 attempts: Connection refused'
+        );
+      } finally {
+        // Cleanup
+        setTimeoutSpy.mockRestore();
+        consoleErrorSpy.mockRestore();
+      }
+    });
+
+    it('should report the rounded retry delay on stderr', async () => {
+      // Arrange: first attempt fails, second succeeds; Math.random() = 0 makes
+      // the first delay exactly 5000ms. The explicit default makes any extra
+      // connect() call fail loudly instead of inheriting an earlier test's mock.
+      mockFalkorDB.FalkorDB.connect
+        .mockRejectedValue(new Error('unexpected extra connect() call'))
+        .mockRejectedValueOnce(new Error('Connection refused'))
+        .mockResolvedValueOnce({
+          connection: Promise.resolve({
+            ping: mockFalkorDB.mockPing.mockResolvedValue('PONG')
+          }),
+          selectGraph: mockFalkorDB.mockSelectGraph,
+          list: mockFalkorDB.mockList,
+          close: mockFalkorDB.mockClose
+        });
+
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockImplementation((callback: any) => {
+        setImmediate(callback);
+        return {} as any;
+      });
+      const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      try {
+        // Act
+        await falkorDBService.initialize();
+
+        // Assert
+        expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          '[FalkorDB] Connection attempt 1/6 failed, retrying in 5s...'
+        );
+        expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 5000);
+      } finally {
+        // Cleanup
+        setTimeoutSpy.mockRestore();
+        randomSpy.mockRestore();
+        consoleErrorSpy.mockRestore();
+      }
+    });
+
+    it('should not write to stderr when the first connection attempt succeeds', async () => {
+      // Arrange: explicit default so an extra connect() call can't inherit an earlier test's mock
+      mockFalkorDB.FalkorDB.connect
+        .mockRejectedValue(new Error('unexpected extra connect() call'))
+        .mockResolvedValueOnce({
+        connection: Promise.resolve({
+          ping: mockFalkorDB.mockPing.mockResolvedValue('PONG')
+        }),
+        selectGraph: mockFalkorDB.mockSelectGraph,
+        list: mockFalkorDB.mockList,
+        close: mockFalkorDB.mockClose
+      });
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      try {
+        // Act
+        await falkorDBService.initialize();
+
+        // Assert
+        expect(consoleErrorSpy).not.toHaveBeenCalled();
+      } finally {
+        consoleErrorSpy.mockRestore();
+      }
+    });
+
     it('should handle ping failure during connection test', async () => {
       // Arrange
       const pingError = new Error('Ping failed');

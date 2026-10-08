@@ -25,6 +25,8 @@ export const config = {
   },
   mcp: {
     transport: (process.env.MCP_TRANSPORT || 'stdio') as 'stdio' | 'http',
-    apiKey: process.env.MCP_API_KEY || '',
+    // Trimmed so the startup guard and the Bearer check agree on whether a key is set.
+    apiKey: (process.env.MCP_API_KEY || '').trim(),
+    bindAddress: process.env.MCP_BIND_ADDRESS || '127.0.0.1',
   },
 };

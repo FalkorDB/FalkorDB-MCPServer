@@ -84,15 +84,21 @@ class FalkorDBService {
           });
 
           const delay = Math.min(5000 * 2 ** this.retryCount, 30000) + Math.random() * 1000;
+
+          console.error(
+            `[FalkorDB] Connection attempt ${this.retryCount + 1}/${this.maxRetries + 1} failed, retrying in ${Math.round(delay / 1000)}s...`
+          );
+
           await new Promise(resolve => setTimeout(resolve, delay));
         } else {
           const appError = new AppError(
             CommonErrors.CONNECTION_FAILED,
-            `Failed to connect to FalkorDB after ${this.maxRetries} attempts: ${error instanceof Error ? error.message : String(error)}`,
+            `Failed to connect to FalkorDB after ${this.maxRetries + 1} attempts: ${error instanceof Error ? error.message : String(error)}`,
             true
           );
-          
+
           await logger.error('FalkorDB connection failed permanently', appError);
+          console.error(`[FalkorDB] ${appError.message}`);
           throw appError;
         }
       }
