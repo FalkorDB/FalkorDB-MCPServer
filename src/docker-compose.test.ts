@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { devNull, tmpdir } from 'node:os';
 import { dirname, join, parse } from 'node:path';
 
 /**
@@ -327,7 +327,7 @@ const composeAvailable =
   function resolved(env: Record<string, string>): ComposeConfig {
     const result = spawnSync(
       'docker',
-      ['compose', '-f', join(repoRoot(), 'docker-compose.yml'), '--env-file', '/dev/null', 'config', '--format', 'json'],
+      ['compose', '-f', join(repoRoot(), 'docker-compose.yml'), '--env-file', devNull, 'config', '--format', 'json'],
       // Only PATH and HOME from the developer's shell, so their own bind settings can't leak in.
       { encoding: 'utf8', env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', ...env } },
     );

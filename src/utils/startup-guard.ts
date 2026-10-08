@@ -9,6 +9,13 @@ import { isUnauthenticatedNetworkExposure } from './bind-address.js';
  * initializing any other services, so a refusal doesn't first open a
  * FalkorDB connection it's about to abandon.
  *
+ * This checks the address MCP_BIND_ADDRESS *declares*, not the one the server
+ * listens on: httpServer.listen() always binds every interface. Under Docker
+ * Compose the declared address is the published port's host IP, so the check
+ * is exact; elsewhere (bare `node`, `docker run -p`, Kubernetes) it is only
+ * advisory, and an unset MCP_BIND_ADDRESS passes as loopback. #192 tracks a
+ * real listen-address setting.
+ *
  * Exits directly rather than throwing: a throw from inside startServer()'s
  * try/catch would be routed through gracefulShutdown(), which exits 0 on its
  * success path — turning a startup refusal into a reported success.

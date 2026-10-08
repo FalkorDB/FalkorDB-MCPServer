@@ -222,8 +222,10 @@ describe('FalkorDB Service', () => {
 
     it('should report the rounded retry delay on stderr', async () => {
       // Arrange: first attempt fails, second succeeds; Math.random() = 0 makes
-      // the first delay exactly 5000ms
+      // the first delay exactly 5000ms. The explicit default makes any extra
+      // connect() call fail loudly instead of inheriting an earlier test's mock.
       mockFalkorDB.FalkorDB.connect
+        .mockRejectedValue(new Error('unexpected extra connect() call'))
         .mockRejectedValueOnce(new Error('Connection refused'))
         .mockResolvedValueOnce({
           connection: Promise.resolve({
@@ -260,8 +262,10 @@ describe('FalkorDB Service', () => {
     });
 
     it('should not write to stderr when the first connection attempt succeeds', async () => {
-      // Arrange
-      mockFalkorDB.FalkorDB.connect.mockResolvedValueOnce({
+      // Arrange: explicit default so an extra connect() call can't inherit an earlier test's mock
+      mockFalkorDB.FalkorDB.connect
+        .mockRejectedValue(new Error('unexpected extra connect() call'))
+        .mockResolvedValueOnce({
         connection: Promise.resolve({
           ping: mockFalkorDB.mockPing.mockResolvedValue('PONG')
         }),

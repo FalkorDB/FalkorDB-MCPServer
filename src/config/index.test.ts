@@ -1,3 +1,7 @@
+// config/index.ts loads a local .env at import time; stub it out so the tests
+// below see only process.env, not whatever a developer has configured.
+jest.mock('dotenv', () => ({ __esModule: true, default: { config: jest.fn() } }));
+
 import { config } from '../config';
 
 describe('Config', () => {
