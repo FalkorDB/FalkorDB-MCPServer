@@ -12,10 +12,10 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Use Node.js 20
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
         with:
           node-version: 20
           cache: npm
@@ -33,6 +33,12 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: Set version from Git tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Setting version to $VERSION"
+          npm version "$VERSION" --no-git-tag-version
 
       - name: Publish
         run: npm publish --provenance --access public

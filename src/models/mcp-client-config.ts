@@ -28,7 +28,7 @@ export interface MCPServerConfig {
     defaultServer: "falkordb",
     servers: {
       "falkordb": {
-        url: "http://localhost:3000/api/mcp",
+        url: "http://localhost:8080",
         apiKey: "your_api_key_here"
       }
     }
@@ -45,7 +45,7 @@ export interface MCPServerConfig {
           "run",
           "-i",
           "--rm",
-          "-p", "3000:3000",
+          "-p", "8080:8080",
           "--env-file", ".env",
           "falkordb-mcpserver",
           "falkordb://host.docker.internal:6379"

@@ -19,6 +19,7 @@ jest.mock('../config/index.js', () => ({
       port: 6379,
       username: 'testuser',
       password: 'testpass',
+      tls: false,
       defaultReadOnly: false
     }
   }
@@ -103,6 +104,73 @@ describe('FalkorDB Service', () => {
       expect((falkorDBService as any).client).not.toBeNull();
       expect((falkorDBService as any).retryCount).toBe(0);
       expect((falkorDBService as any).initializingPromise).toBeNull();
+    });
+
+    it('should enable TLS with SNI servername when config.falkorDB.tls is true', async () => {
+      // Arrange
+      const { config } = await import('../config/index.js');
+      (config.falkorDB as any).tls = true;
+      mockFalkorDB.FalkorDB.connect.mockResolvedValue({
+        connection: Promise.resolve({
+          ping: mockFalkorDB.mockPing.mockResolvedValue('PONG')
+        }),
+        selectGraph: mockFalkorDB.mockSelectGraph,
+        list: mockFalkorDB.mockList,
+        close: mockFalkorDB.mockClose
+      });
+
+      try {
+        // Act
+        await falkorDBService.initialize();
+
+        // Assert
+        expect(mockFalkorDB.FalkorDB.connect).toHaveBeenCalledWith({
+          socket: {
+            host: 'localhost',
+            port: 6379,
+            tls: true,
+            servername: 'localhost',
+          },
+          password: 'testpass',
+          username: 'testuser',
+        });
+      } finally {
+        (config.falkorDB as any).tls = false;
+      }
+    });
+
+    it('should not set servername when the TLS host is an IP address', async () => {
+      // Arrange
+      const { config } = await import('../config/index.js');
+      (config.falkorDB as any).tls = true;
+      (config.falkorDB as any).host = '10.0.0.5';
+      mockFalkorDB.FalkorDB.connect.mockResolvedValue({
+        connection: Promise.resolve({
+          ping: mockFalkorDB.mockPing.mockResolvedValue('PONG')
+        }),
+        selectGraph: mockFalkorDB.mockSelectGraph,
+        list: mockFalkorDB.mockList,
+        close: mockFalkorDB.mockClose
+      });
+
+      try {
+        // Act
+        await falkorDBService.initialize();
+
+        // Assert
+        expect(mockFalkorDB.FalkorDB.connect).toHaveBeenCalledWith({
+          socket: {
+            host: '10.0.0.5',
+            port: 6379,
+            tls: true,
+          },
+          password: 'testpass',
+          username: 'testuser',
+        });
+      } finally {
+        (config.falkorDB as any).tls = false;
+        (config.falkorDB as any).host = 'localhost';
+      }
     });
 
     it('should await ongoing initialization if already initializing', async () => {
@@ -232,7 +300,7 @@ describe('FalkorDB Service', () => {
       
       // Assert
       expect(mockFalkorDB.mockSelectGraph).toHaveBeenCalledWith(graphName);
-      expect(mockFalkorDB.mockQuery).toHaveBeenCalledWith(query, params);
+      expect(mockFalkorDB.mockQuery).toHaveBeenCalledWith(query, { params });
       expect(mockFalkorDB.mockRoQuery).not.toHaveBeenCalled();
       expect(result).toEqual(expectedResult);
     });
@@ -259,6 +327,27 @@ describe('FalkorDB Service', () => {
       expect(result).toEqual(expectedResult);
     });
 
+    it('should treat an empty params object as no params (undefined options)', async () => {
+      // Arrange
+      const graphName = 'testGraph';
+      const query = 'MATCH (n) RETURN n';
+      const expectedResult = { records: [{ id: 1 }] };
+
+      mockFalkorDB.mockQuery.mockResolvedValue(expectedResult);
+
+      // Force client to be available
+      (falkorDBService as any).client = {
+        selectGraph: mockFalkorDB.mockSelectGraph
+      };
+
+      // Act — empty object must not become { params: {} } (which would alter the CYPHER preamble)
+      const result = await falkorDBService.executeQuery(graphName, query, {});
+
+      // Assert
+      expect(mockFalkorDB.mockQuery).toHaveBeenCalledWith(query, undefined);
+      expect(result).toEqual(expectedResult);
+    });
+
     it('should execute a read-only query when readOnly flag is true', async () => {
       // Arrange
       const graphName = 'testGraph';
@@ -278,7 +367,7 @@ describe('FalkorDB Service', () => {
       
       // Assert
       expect(mockFalkorDB.mockSelectGraph).toHaveBeenCalledWith(graphName);
-      expect(mockFalkorDB.mockRoQuery).toHaveBeenCalledWith(query, params);
+      expect(mockFalkorDB.mockRoQuery).toHaveBeenCalledWith(query, { params });
       expect(mockFalkorDB.mockQuery).not.toHaveBeenCalled();
       expect(result).toEqual(expectedResult);
     });
@@ -387,7 +476,7 @@ describe('FalkorDB Service', () => {
       
       // Assert
       expect(mockFalkorDB.mockSelectGraph).toHaveBeenCalledWith(graphName);
-      expect(mockFalkorDB.mockRoQuery).toHaveBeenCalledWith(query, params);
+      expect(mockFalkorDB.mockRoQuery).toHaveBeenCalledWith(query, { params });
       expect(mockFalkorDB.mockQuery).not.toHaveBeenCalled();
       expect(result).toEqual(expectedResult);
     });

@@ -1,5 +1,7 @@
+[![MCP Toplist](https://mcptoplist.com/badge/glama%2FFalkorDB%2FFalkorDB-MCPServer.svg)](https://mcptoplist.com/server/glama%2FFalkorDB%2FFalkorDB-MCPServer)
+
 [![Tests](https://img.shields.io/github/actions/workflow/status/falkordb/FalkorDB-MCPServer/node.yml?branch=main)](https://github.com/falkordb/FalkorDB-MCPServer/actions/workflows/node.yml)
-[![Coverage](https://codecov.io/gh/falkordb/FalkorDB-MCPServer/branch/main/graph/badge.svg?token=nNxm2N0Xrl)](https://codecov.io/gh/falkordb/FalkorDB-MCPServer)
+[![codecov](https://codecov.io/gh/falkordb/FalkorDB-MCPServer/graph/badge.svg?token=pqGhrlbC1F)](https://codecov.io/gh/falkordb/FalkorDB-MCPServer)
 [![License](https://img.shields.io/github/license/falkordb/FalkorDB-MCPServer.svg)](https://github.com/falkordb/FalkorDB-MCPServer/blob/main/LICENSE)
 [![Discord](https://img.shields.io/discord/1146782921294884966.svg?style=social&logo=discord)](https://discord.com/invite/99y2Ubh6tg)
 [![X (formerly Twitter)](https://img.shields.io/badge/follow-%40falkordb-1DA1F2?logo=x&style=social)](https://x.com/falkordb)
@@ -79,6 +81,31 @@ This is useful for:
 - Running the server standalone without Claude Desktop
 - Custom integrations and scripting
 
+### Docker Compose
+
+Run FalkorDB and the MCP server together:
+
+```bash
+cp .env.example .env   # create env file; edit to set MCP_API_KEY, FALKORDB_PASSWORD, etc.
+docker compose up -d
+```
+
+> **Note:** Skipping the `.env` file leaves variables like `MCP_API_KEY` and `FALKORDB_PASSWORD` empty, which disables API key authentication and uses no database password.
+
+> **Tip:** Set `REDIS_ARGS` in `.env` to pass extra flags to the bundled FalkorDB's `redis-server`, for example `REDIS_ARGS=--appendonly yes`. The value is split on whitespace, and the auth flags derived from `FALKORDB_PASSWORD` are appended after it, so they win on conflict.
+>
+> Flags that write to disk do not yet survive a `docker compose down`: the image runs `redis-server --dir /var/lib/falkordb/data` — appended *after* `REDIS_ARGS`, so the directory cannot be overridden here — while the `falkordb-data` volume is mounted at `/data`. Until [#174](https://github.com/FalkorDB/FalkorDB-MCPServer/pull/174) moves the mount to the real data directory, RDB and AOF files are written to the container's writable layer.
+
+This starts FalkorDB with health checks and persistent volumes, plus the MCP server pre-configured to connect to it.
+
+The MCP server runs in **HTTP transport** mode and is exposed on `localhost:8080` by default. To connect a client, configure it to use:
+
+- **Transport:** `http`
+- **URL:** `http://localhost:8080`
+- **API Key:** Set via the `MCP_API_KEY` environment variable (optional)
+
+See `docker-compose.yml` for the exact port and configuration values.
+
 ### Installation
 
 1. **Clone and install:**
@@ -103,6 +130,7 @@ This is useful for:
    FALKORDB_PORT=6379
    FALKORDB_USERNAME=    # Optional
    FALKORDB_PASSWORD=    # Optional
+   FALKORDB_TLS=false    # Set to 'true' when FalkorDB is behind TLS
    FALKORDB_DEFAULT_READONLY=false  # Set to 'true' for read-only mode (useful for replicas)
 
    # Logging Configuration (optional)
@@ -152,6 +180,8 @@ Once connected, you can ask Claude to:
 
 There's also a dedicated `query_graph_readonly` tool that always executes queries in read-only mode.
 
+**Parameterized queries:** The `query_graph` and `query_graph_readonly` tools accept an optional `params` object so values can be passed separately from the query text (referenced as `$name`), instead of string-concatenating them into Cypher. This avoids query-injection risks and malformed queries. For example, a query of `MATCH (p:Person {name: $name}) RETURN p` with `params: { "name": "Alice" }`. Parameter names (including nested map keys) must be valid identifiers. Note: FalkorDB does not allow parameters in `LIMIT`/`SKIP` clauses.
+
 ### 📝 Manage Data
 ```text
 "Create a new person named Alice who knows Bob"
@@ -161,9 +191,19 @@ There's also a dedicated `query_graph_readonly` tool that always executes querie
 ### 📊 Explore Structure
 ```text
 "List all available graphs"
-"Show me the structure of the user_data graph"
+"Show me the schema of the movies graph"
+"What properties do Person nodes usually have in the movies graph?"
+"What properties are on ACTED_IN relationships in the movies graph?"
 "Delete the old_test graph"
 ```
+
+**Schema discovery:** FalkorDB is schemaless, so three tools help an agent orient itself before querying:
+- `get_graph_schema` — returns node labels, relationship types, and (optionally) the connection topology. Each connection is `{ source, relationship, target }` where `source` and `target` are **arrays** of node labels (a node may have multiple labels) and `relationship` is the relationship type. Topology is derived from a bounded sample of relationships (`connectionSampleSize`, default `10000`) and can be turned off with `includeConnections: false` on very large graphs.
+- `get_node_schema` / `get_relationship_schema` — sample up to `sampleSize` (default `100`) nodes/relationships of a given label/type and rank their property keys by frequency, returning the actual `sampledCount` alongside `requestedSampleSize`. Useful for spotting property naming drift.
+
+All three schema tools always execute read-only (`GRAPH.RO_QUERY`), so they are safe to run against replica/read-only deployments.
+
+A typical orientation workflow is: `list_graphs → get_graph_schema → get_node_schema / get_relationship_schema → query_graph`.
 
 ## 🛠️ Development
 
@@ -249,7 +289,7 @@ Exposes the MCP server over HTTP for remote or networked access. Supports multip
 
 ```env
 MCP_TRANSPORT=http
-MCP_PORT=3000
+MCP_PORT=8080
 MCP_API_KEY=your-secret-api-key  # Optional but recommended
 ```
 
@@ -259,12 +299,12 @@ When using HTTP transport, clients connect by sending a POST request with an `in
 
 1. Start the server:
    ```bash
-   MCP_TRANSPORT=http MCP_PORT=3000 npm start
+   MCP_TRANSPORT=http MCP_PORT=8080 npm start
    ```
 
 2. Use the MCP Inspector to connect:
    ```bash
-   npx @modelcontextprotocol/inspector --transport streamable-http --url http://localhost:3000
+   npx @modelcontextprotocol/inspector --transport streamable-http --url http://localhost:8080
    ```
 
 > **Note:** `npm run inspect` uses stdio transport. For HTTP, start the server and inspector separately as shown above.
@@ -286,11 +326,29 @@ Requests without a valid key receive a `401 Unauthorized` response. Auth is only
 
 ### Using with Docker
 
-Build and run the MCP server in a Docker container (defaults to HTTP transport):
+**Using pre-built images from Docker Hub:**
+
+```bash
+# Use the latest stable release
+docker pull falkordb/mcpserver:latest
+docker run -p 8080:8080 \
+  -e FALKORDB_HOST=host.docker.internal \
+  -e FALKORDB_PORT=6379 \
+  -e MCP_API_KEY=your-secret-key \
+  falkordb/mcpserver:latest
+
+# Or use the edge version (latest main branch)
+docker pull falkordb/mcpserver:edge
+
+# Or pin to a specific version
+docker pull falkordb/mcpserver:1.0.0
+```
+
+**Building locally:**
 
 ```bash
 docker build -t falkordb-mcpserver .
-docker run -p 3000:3000 \
+docker run -p 8080:8080 \
   -e FALKORDB_HOST=host.docker.internal \
   -e FALKORDB_PORT=6379 \
   -e MCP_API_KEY=your-secret-key \
@@ -307,14 +365,14 @@ services:
       - "6379:6379"
 
   mcp-server:
-    build: .
+    image: falkordb/mcpserver:latest  # or use 'build: .' to build locally
     ports:
-      - "3000:3000"
+      - "8080:8080"
     environment:
       - FALKORDB_HOST=falkordb
       - FALKORDB_PORT=6379
       - MCP_TRANSPORT=http
-      - MCP_PORT=3000
+      - MCP_PORT=8080
       - MCP_API_KEY=your-secret-key
     depends_on:
       - falkordb
@@ -330,6 +388,30 @@ FALKORDB_PORT=6379
 FALKORDB_USERNAME=your-username
 FALKORDB_PASSWORD=your-secure-password
 ```
+
+### Connecting over TLS
+
+If your FalkorDB instance is only reachable over TLS (for example FalkorDB Cloud, or a
+self-hosted instance behind a TLS-terminating load balancer such as an AWS NLB or Fly.io),
+set `FALKORDB_TLS=true`. The server then opens a TLS connection with certificate and
+hostname verification, sending `FALKORDB_HOST` as the SNI server name, so the host should be
+a DNS name that matches the certificate rather than an IP address.
+
+```env
+FALKORDB_HOST=your-instance.falkordb.com
+FALKORDB_PORT=6379
+FALKORDB_TLS=true
+FALKORDB_USERNAME=your-username
+FALKORDB_PASSWORD=your-secure-password
+```
+
+Any value other than `true` (including unset) keeps the default plaintext connection.
+
+`FALKORDB_TLS` applies when you run the server against your own FalkorDB (`npm start`, an MCP
+client config, or `docker run` with `-e FALKORDB_HOST=... -e FALKORDB_TLS=true`). The bundled
+`docker-compose.yml` does not forward it: Compose always connects the MCP server to its own
+FalkorDB container over the internal network, which speaks plaintext, so TLS there would fail
+the handshake.
 
 ### Read-Only Mode for Replica Instances
 

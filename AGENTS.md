@@ -70,6 +70,11 @@ src/
 | `query_graph_readonly` | Execute read-only OpenCypher queries |
 | `list_graphs` | List all available graphs in the database |
 | `delete_graph` | Delete a specific graph |
+| `get_graph_schema` | Get node labels, relationship types, and (optional, bounded) connection topology for a graph |
+| `get_node_schema` | Sample nodes of a label and rank their property keys by frequency (reveals the de-facto schema) |
+| `get_relationship_schema` | Sample relationships of a type and rank their property keys by frequency |
+
+Schema-discovery tools (`get_graph_schema`, `get_node_schema`, `get_relationship_schema`) always execute via `executeReadOnlyQuery` (`GRAPH.RO_QUERY`), since discovery is inherently read-only and must work on replica/read-only deployments.
 
 ### MCP Resources
 - `graph_list` — provides a markdown-formatted listing of all graphs
@@ -97,6 +102,7 @@ Environment variables (copy `.env.example` to `.env`):
 | `FALKORDB_PORT` | `6379` | FalkorDB port |
 | `FALKORDB_USERNAME` | — | Optional authentication |
 | `FALKORDB_PASSWORD` | — | Optional authentication |
+| `REDIS_ARGS` | — | Docker Compose only: extra `redis-server` flags for the bundled FalkorDB container, split on whitespace. The auth flags built from `FALKORDB_USERNAME`/`FALKORDB_PASSWORD` are appended after it, so they win on conflict. Not read by the MCP server itself |
 | `FALKORDB_DEFAULT_READONLY` | `false` | Set to 'true' for read-only mode (useful for replicas) |
 
 ## MCP Client Integration
@@ -117,6 +123,10 @@ Add to `claude_desktop_config.json`:
 ## CI/CD
 - Tests run against a `falkordb/falkordb:edge` Docker service
 - Build and lint checks validate TypeScript compilation and code style
+- Docker images are automatically published to `falkordb/mcpserver`:
+  - `edge` tag: published on every push to `main`
+  - `x.y.z` and `latest` tags: published when a version tag is pushed or release is published
+  - Multi-platform builds: `linux/amd64`, `linux/arm64`
 
 ## Before Finishing a Task
 After completing any task, review whether your changes require updates to:

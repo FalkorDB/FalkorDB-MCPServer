@@ -1,3 +1,4 @@
+import { isIP } from 'node:net';
 import { FalkorDB } from 'falkordb';
 import { config } from '../config/index.js';
 import { AppError, CommonErrors } from '../errors/AppError.js';
@@ -44,6 +45,7 @@ class FalkorDBService {
         logger.info('Attempting to connect to FalkorDB', {
           host: config.falkorDB.host,
           port: config.falkorDB.port,
+          tls: config.falkorDB.tls,
           attempt: this.retryCount + 1
         });
 
@@ -51,9 +53,16 @@ class FalkorDBService {
           socket: {
             host: config.falkorDB.host,
             port: config.falkorDB.port,
+            // Node's tls.connect does not infer SNI from host, and SNI-dependent
+            // TLS terminators reject the handshake without it. Node also refuses
+            // an IP address as servername, so only set it for DNS names.
+            ...(config.falkorDB.tls && {
+              tls: true,
+              ...(isIP(config.falkorDB.host) === 0 && { servername: config.falkorDB.host }),
+            }),
           },
-          password: config.falkorDB.password,
-          username: config.falkorDB.username,
+          ...(config.falkorDB.username && { username: config.falkorDB.username }),
+          ...(config.falkorDB.password && { password: config.falkorDB.password }),
         });
 
         // Test connection
@@ -110,15 +119,16 @@ class FalkorDBService {
 
     try {
       const graph = this.client.selectGraph(graphName);
-      const result = readOnly 
-        ? await graph.roQuery(query, params)
-        : await graph.query(query, params);
+      const options = params && Object.keys(params).length > 0 ? { params } : undefined;
+      const result = readOnly
+        ? await graph.roQuery(query, options)
+        : await graph.query(query, options);
       
       // Fire-and-forget: informational log, not critical
       logger.debug('Query executed successfully', {
         graphName,
         query: query.substring(0, 100) + (query.length > 100 ? '...' : ''),
-        hasParams: !!params,
+        hasParams: options !== undefined,
         readOnly
       });
       
