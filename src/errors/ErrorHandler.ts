@@ -96,11 +96,11 @@ export class ErrorHandler {
     let sanitized = sanitizedLines.join('\n').trim();
 
     // Remove credentials from URLs of any scheme (must be done before host and path removal)
-    sanitized = sanitized.replace(/\b([a-z][a-z0-9+.-]*):\/\/[^@\s]+@\S+/gi, '$1://<credentials>@<host>');
+    sanitized = sanitized.replace(/\b([a-z][a-z0-9+.-]{0,31}):\/\/[^@\s]{1,256}@\S+/gi, '$1://<credentials>@<host>');
 
     // Remove database connection strings without credentials (prevents leaking internal network topology)
     sanitized = sanitized.replace(
-      /\b(rediss?|falkordbs?|mongodb(?:\+srv)?|postgres(?:ql)?):\/\/(?![^@\s]+@)\S+/gi,
+      /\b(rediss?|falkordbs?|mongodb(?:\+srv)?|postgres(?:ql)?):\/\/(?![^@\s]{1,256}@)\S+/gi,
       '$1://<host>'
     );
 

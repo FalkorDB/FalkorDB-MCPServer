@@ -595,6 +595,28 @@ describe('ErrorHandler', () => {
       expect(result.content[0].text).toBe('Error: An unexpected error occurred');
     });
 
+    it('should hide a database URL whose credentials are too long to match as userinfo', () => {
+      const secret = 's'.repeat(300);
+      const text = handler.toMcpErrorResult(new Error(`Could not reach redis://admin:${secret}@cache.internal:6379`)).content[0].text;
+
+      expect(text).toBe('Error: Could not reach redis://<host>');
+    });
+
+    // Error messages can echo user query text, so a crafted message must not
+    // trigger catastrophic regex backtracking (each case took 5-30 s before the
+    // scheme and userinfo lengths were bounded)
+    it.each([
+      ['repeated dotted words', 'a.'.repeat(100000)],
+      ['repeated schemes', 'redis://'.repeat(25000)],
+      ['repeated URLs without credentials', 'x://a'.repeat(25000)],
+      ['repeated file URLs', 'file://'.repeat(25000)],
+    ])('should sanitize %s in linear time', (_name, message) => {
+      const start = Date.now();
+      handler.toMcpErrorResult(new Error(message));
+
+      expect(Date.now() - start).toBeLessThan(1000);
+    });
+
     it('should be idempotent', () => {
       const once = handler.toMcpErrorResult(
         new Error('Connect to redis://admin:secret@10.0.4.17:6379 from /app/src/db.ts failed: ECONNREFUSED 10.0.4.17:6379')
