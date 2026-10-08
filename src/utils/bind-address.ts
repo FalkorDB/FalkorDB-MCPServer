@@ -2,7 +2,14 @@
  * Utility to classify a Docker bind-address value as local (loopback) or not.
  */
 
-import { isIPv4 } from 'net';
+import { BlockList, isIP } from 'net';
+
+// Every loopback address: 127.0.0.0/8 and ::1. BlockList also matches the
+// IPv4-mapped forms of 127.0.0.0/8 (`::ffff:127.0.0.1`, `::ffff:7f00:1`) and
+// any spelling of ::1 (`0:0:0:0:0:0:0:1`), so no string matching is needed.
+const LOOPBACK = new BlockList();
+LOOPBACK.addSubnet('127.0.0.0', 8, 'ipv4');
+LOOPBACK.addAddress('::1', 'ipv6');
 
 /**
  * Determine whether a bind-address value (as set via MCP_BIND_ADDRESS) refers
@@ -11,47 +18,43 @@ import { isIPv4 } from 'net';
  *
  * Accepts:
  *  - unset/empty (treated as "not opted in", so it's safe)
- *  - `127.0.0.0/8` in either bracketed or unbracketed form
- *  - `::1`, bracketed as `[::1]` or not (Docker Compose's `host_ip` accepts both)
- *  - IPv4-mapped loopback, e.g. `::ffff:127.0.0.1`
+ *  - `127.0.0.0/8`
+ *  - `::1` in any spelling, bracketed as `[::1]` or not (Docker Compose's
+ *    `host_ip` accepts both)
+ *  - IPv4-mapped loopback, e.g. `::ffff:127.0.0.1` or `::ffff:7f00:1`
  *
  * Deliberately does NOT special-case `localhost`: Docker Compose rejects it
  * outright as an invalid `host_ip` before the container ever starts, so
  * accepting it here would just invite unverifiable hostname assumptions.
  *
- * Everything else — including `0.0.0.0`, `::`, and any LAN/public address —
- * is treated as non-local (fails closed).
+ * Everything else — including `0.0.0.0`, `::`, any LAN/public address, a
+ * whitespace-only value and anything that isn't a valid IP literal — is
+ * treated as non-local (fails closed).
  *
  * @param value The raw MCP_BIND_ADDRESS value.
  * @returns true if the value is a loopback address (or unset).
  */
 export function isLocalBindAddress(value: string | undefined): boolean {
-  const normalized = (value ?? '').trim();
-
-  if (normalized === '') {
+  if (value === undefined || value === '') {
     return true;
   }
 
+  const normalized = value.trim();
+
   // Compose's host_ip accepts IPv6 literals bracketed (e.g. "[::1]") or bare.
-  const unbracketed = normalized.startsWith('[') && normalized.endsWith(']')
+  const candidate = normalized.startsWith('[') && normalized.endsWith(']')
     ? normalized.slice(1, -1)
     : normalized;
 
-  if (unbracketed === '::1') {
-    return true;
+  // isIP() validates every octet (0-255, no leading zeros), so garbage like
+  // `127.999.999.999` or octal-looking `127.00.0.1` is rejected rather than
+  // classified as loopback.
+  const family = isIP(candidate);
+  if (family === 0) {
+    return false;
   }
 
-  const ipv4MappedMatch = unbracketed.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i);
-  const ipv4Candidate = ipv4MappedMatch ? ipv4MappedMatch[1] : unbracketed;
-
-  // isIPv4() validates every octet (0-255, no leading zeros), unlike a shape-only
-  // regex — so garbage like `127.999.999.999` or octal-looking `127.00.0.1` is
-  // correctly rejected rather than classified as loopback.
-  if (isIPv4(ipv4Candidate)) {
-    return ipv4Candidate.startsWith('127.');
-  }
-
-  return false;
+  return LOOPBACK.check(candidate, family === 4 ? 'ipv4' : 'ipv6');
 }
 
 interface McpHttpAuthConfig {

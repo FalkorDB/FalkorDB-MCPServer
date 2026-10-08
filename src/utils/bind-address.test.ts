@@ -14,8 +14,12 @@ describe('Bind Address Utility', () => {
         '[::ffff:127.0.0.1]', // bracketed IPv4-mapped IPv6 loopback
         '  127.0.0.1  ', // loopback with surrounding whitespace
         '  [::1]  ', // bracketed IPv6 loopback with surrounding whitespace
+        '0:0:0:0:0:0:0:1', // expanded IPv6 loopback
+        '0000:0000:0000:0000:0000:0000:0000:0001', // fully padded IPv6 loopback
+        '::ffff:7f00:1', // hex IPv4-mapped loopback
+        '::ffff:7f00:2', // hex IPv4-mapped 127.0.0.2
+        '[::ffff:7f00:1]', // bracketed hex IPv4-mapped loopback
         '', // empty string (unset)
-        '   ', // whitespace only (unset)
         undefined, // undefined (unset)
       ];
 
@@ -45,8 +49,12 @@ describe('Bind Address Utility', () => {
         '::1]', // unbalanced bracket
         '::ffff:0.0.0.0', // IPv4-mapped wildcard
         '::ffff:192.168.1.10', // IPv4-mapped LAN address
-        '::ffff:7f00:1', // hex IPv4-mapped loopback: not recognized, fails closed
-        '0:0:0:0:0:0:0:1', // expanded IPv6 loopback: not normalized, fails closed
+        '::ffff:a00:1', // hex IPv4-mapped LAN address (10.0.0.1)
+        '::2', // IPv6 address next to loopback
+        '0:0:0:0:0:0:0:0', // expanded IPv6 wildcard
+        'fe80::1%eth0', // link-local IPv6 with a zone ID
+        '   ', // whitespace only: a config mistake, not "unset"
+        '[]', // empty brackets
         '127.0.0.1:8080', // address with a port appended
       ];
 

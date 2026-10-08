@@ -59,4 +59,37 @@ describe('Config', () => {
       expect((await loadConfig()).mcp.bindAddress).toBe('0.0.0.0');
     });
   });
+
+  describe('mcp.apiKey', () => {
+    const originalApiKey = process.env.MCP_API_KEY;
+
+    afterEach(() => {
+      if (originalApiKey === undefined) {
+        delete process.env.MCP_API_KEY;
+      } else {
+        process.env.MCP_API_KEY = originalApiKey;
+      }
+      jest.resetModules();
+    });
+
+    async function loadConfig() {
+      jest.resetModules();
+      return (await import('./index.js')).config;
+    }
+
+    test('is empty when MCP_API_KEY is unset', async () => {
+      delete process.env.MCP_API_KEY;
+      expect((await loadConfig()).mcp.apiKey).toBe('');
+    });
+
+    test('trims surrounding whitespace so the Bearer check matches the bare key', async () => {
+      process.env.MCP_API_KEY = '  secret \t';
+      expect((await loadConfig()).mcp.apiKey).toBe('secret');
+    });
+
+    test('treats a whitespace-only MCP_API_KEY as unset', async () => {
+      process.env.MCP_API_KEY = '   ';
+      expect((await loadConfig()).mcp.apiKey).toBe('');
+    });
+  });
 });

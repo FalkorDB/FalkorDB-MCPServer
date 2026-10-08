@@ -107,7 +107,7 @@ Environment variables (copy `.env.example` to `.env`):
 | `REDIS_ARGS` | — | Docker Compose only: extra `redis-server` flags for the bundled FalkorDB container, split on whitespace. The auth flags built from `FALKORDB_USERNAME`/`FALKORDB_PASSWORD` are appended after it, so they win on conflict. Not read by the MCP server itself |
 | `FALKORDB_DEFAULT_READONLY` | `false` | Set to 'true' for read-only mode (useful for replicas) |
 | `MCP_TRANSPORT` | `stdio` | `stdio` or `http` — selects which transport `src/index.ts` starts |
-| `MCP_API_KEY` | — | Bearer token required on HTTP requests when set; HTTP auth is disabled when unset. Ignored in stdio mode |
+| `MCP_API_KEY` | — | Bearer token required on HTTP requests when set; HTTP auth is disabled when unset. Surrounding whitespace is trimmed, so a whitespace-only value counts as unset. Ignored in stdio mode |
 | `MCP_BIND_ADDRESS` | `127.0.0.1` | Docker Compose: host-side bind address for the MCP server's published port. Every deployment mode evaluates it in the HTTP startup guard — non-loopback with `MCP_API_KEY` unset refuses to start. Does not change the process's own listen address outside Compose (`httpServer.listen()` always binds every interface there — see #192) |
 | `FALKORDB_WEB_BIND_ADDRESS` | `127.0.0.1` | Docker Compose only: interface the bundled FalkorDB web UI's published port binds to. The web UI has no auth of its own, so this is a manual, unguarded opt-in with no equivalent startup check |
 

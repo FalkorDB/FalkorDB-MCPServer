@@ -290,3 +290,75 @@ describePosix('docker-compose.yml falkordb healthcheck (executed)', () => {
     expect(probe({ STUB_REPLY: 'NOAUTH Authentication required.' }).status).not.toBe(0);
   });
 });
+
+/**
+ * The MCP server's published port and the `MCP_BIND_ADDRESS` the startup guard reads
+ * inside the container come from two separate `${...}` expressions. If their defaults
+ * drift apart, the guard judges an address Compose isn't actually publishing on.
+ */
+describe('docker-compose.yml bind addresses', () => {
+  const MCP_BIND = '${MCP_BIND_ADDRESS:-127.0.0.1}';
+  const WEB_BIND = '${FALKORDB_WEB_BIND_ADDRESS:-127.0.0.1}';
+
+  test('publishes the MCP port on MCP_BIND_ADDRESS, defaulting to loopback', () => {
+    expect(compose).toContain(`- "${MCP_BIND}:\${MCP_PORT:-8080}:8080"`);
+  });
+
+  test('hands the same MCP_BIND_ADDRESS expression to the startup guard', () => {
+    expect(compose).toContain(`- MCP_BIND_ADDRESS=${MCP_BIND}`);
+  });
+
+  test('publishes the web UI port on FALKORDB_WEB_BIND_ADDRESS, defaulting to loopback', () => {
+    expect(compose).toContain(`- "${WEB_BIND}:\${FALKORDB_WEB_PORT:-3000}:3000"`);
+  });
+});
+
+const composeAvailable =
+  spawnSync('docker', ['compose', 'version'], { encoding: 'utf8' }).status === 0;
+
+// `docker compose config` only parses and interpolates the file; it needs the CLI
+// plugin but no running daemon.
+(composeAvailable ? describe : describe.skip)('docker-compose.yml bind addresses (docker compose config)', () => {
+  interface PortMapping { host_ip?: string; published?: string; target?: number }
+  interface ComposeConfig {
+    services: Record<string, { ports?: PortMapping[]; environment?: Record<string, string> }>;
+  }
+
+  function resolved(env: Record<string, string>): ComposeConfig {
+    const result = spawnSync(
+      'docker',
+      ['compose', '-f', join(repoRoot(), 'docker-compose.yml'), '--env-file', '/dev/null', 'config', '--format', 'json'],
+      // Only PATH and HOME from the developer's shell, so their own bind settings can't leak in.
+      { encoding: 'utf8', env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', ...env } },
+    );
+    if (result.status !== 0) {
+      throw new Error(`docker compose config failed: ${result.stderr}`);
+    }
+    return JSON.parse(result.stdout) as ComposeConfig;
+  }
+
+  function hostIp(config: ComposeConfig, service: string, target: number): string | undefined {
+    return config.services[service]?.ports?.find((port) => port.target === target)?.host_ip;
+  }
+
+  test('binds both published ports to 127.0.0.1 by default', () => {
+    const config = resolved({});
+    expect(hostIp(config, 'falkordb-mcpserver', 8080)).toBe('127.0.0.1');
+    expect(hostIp(config, 'falkordb', 3000)).toBe('127.0.0.1');
+    expect(config.services['falkordb-mcpserver']?.environment?.MCP_BIND_ADDRESS).toBe('127.0.0.1');
+  });
+
+  // The short `ports:` syntax splits on `:`, so this guards against an unbracketed
+  // IPv6 host IP being mis-parsed as part of the port mapping.
+  test.each(['::1', '[::1]'])('parses IPv6 loopback %s as the host IP of both ports', (address) => {
+    const config = resolved({ MCP_BIND_ADDRESS: address, FALKORDB_WEB_BIND_ADDRESS: address });
+    expect(hostIp(config, 'falkordb-mcpserver', 8080)).toBe('::1');
+    expect(hostIp(config, 'falkordb', 3000)).toBe('::1');
+  });
+
+  test('passes MCP_BIND_ADDRESS through to the container unchanged', () => {
+    const config = resolved({ MCP_BIND_ADDRESS: '0.0.0.0' });
+    expect(hostIp(config, 'falkordb-mcpserver', 8080)).toBe('0.0.0.0');
+    expect(config.services['falkordb-mcpserver']?.environment?.MCP_BIND_ADDRESS).toBe('0.0.0.0');
+  });
+});
