@@ -290,3 +290,17 @@ describePosix('docker-compose.yml falkordb healthcheck (executed)', () => {
     expect(probe({ STUB_REPLY: 'NOAUTH Authentication required.' }).status).not.toBe(0);
   });
 });
+
+describe('docker-compose.yml falkordb-mcpserver connection', () => {
+  // The MCP server is wired to the bundled, plaintext `falkordb` service. FALKORDB_TLS
+  // targets an external TLS endpoint; forwarding it here would make the server attempt a
+  // TLS handshake against a plaintext server and hang on connect.
+  test('connects to the bundled falkordb service', () => {
+    expect(compose).toMatch(/^\s*- FALKORDB_HOST=falkordb$/m);
+  });
+
+  test('does not forward FALKORDB_TLS to the container', () => {
+    expect(compose).not.toMatch(/^\s*- FALKORDB_TLS=/m);
+  });
+});
+
